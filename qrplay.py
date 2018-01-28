@@ -143,6 +143,8 @@ def handle_qrcode(qrcode):
         handle_spotify_item(qrcode)
     else:
         handle_library_item(qrcode)
+        
+    last_qrcode = qrcode
 
 
 # Preload library on startup (it takes a few seconds to prepare the cache)
