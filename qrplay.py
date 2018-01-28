@@ -62,7 +62,7 @@ def handle_command(qrcode):
         # XXX: Our turntable is hooked up in the dining room, so we always want to
         # source it from that room and play back to the current device; figure out
         # a better way to configure this so it's not hardcoded
-        perform_room_request('linein/Dining%%20Room')
+        perform_room_request('linein/Dining%20Room')
         speak = 'I\'ve activated the turntable'
     elif qrcode == 'cmd:livingroom':
         current_device = 'Living Room'
