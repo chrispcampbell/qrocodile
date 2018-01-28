@@ -156,6 +156,7 @@ def start_scan():
         data = p.readline()
         qrcode = str(data)[8:]
         if qrcode:
+            qrcode = qrcode.rstrip()
             handle_qrcode(qrcode)
 
 try:
