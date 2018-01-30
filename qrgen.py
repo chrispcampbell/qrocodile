@@ -38,7 +38,6 @@ commands = {
   'cmd:diningandkitchen': ('Dining Room / Kitchen', 'https://png.icons8.com/ios/540//dining-room.png'),
   'cmd:songonly': ('Play the Song Only', 'https://raw.githubusercontent.com/google/material-design-icons/master/image/drawable-xxxhdpi/ic_audiotrack_black_48dp.png'),
   'cmd:wholealbum': ('Play the Whole Album', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_album_black_48dp.png'),
-  'cmd:playnow': ('Play This Now!', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_play_circle_outline_black_48dp.png'),
   'cmd:buildqueue': ('Build List of Songs', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_playlist_add_black_48dp.png'),
   'cmd:whatsong': ('What\'s Playing?', 'https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png')
 }
@@ -87,7 +86,7 @@ html = '''
 #   - From <Movie>
 #   (Remastered & Expanded Edition)
 def strip_title_junk(title):
-    junk = [" (Original", " - From", " (Remaster"]
+    junk = [" (Original", " - From", " (Remaster", " [Remaster"]
     for j in junk:
         index = title.find(j)
         if index >= 0:
@@ -136,20 +135,21 @@ def process_local_track(path):
     # camera.  The camera is high-res, but the more pixels it pumps to the QR reader
     # the slower it gets, so we need to prescale the camera output to find the sweet
     # spot between fast and accurate QR detection.  Since this is just a dumb
-    # prototype, I'm storing an MD5 hash for all known tracks and then the `qrplay.py`
-    # script reads that and does a lookup to find the full artist/album/song associated
-    # with the hash.
+    # prototype, I've hacked up a fork of `node-sonos-http-api` that is able to locate a
+    # specific track by searching for this MD5 hash.
     m = hashlib.md5()
     m.update("{0} :: {1} :: {2}".format(artist, album, song).lower())
     md5 = m.hexdigest()
 
     # Create a QR code from the MD5 hash
+    qrdata = "lib:" + md5
+    print qrdata
     print subprocess.check_output(['qrencode', '-o', qrout, qrdata])
     
     # Extract the artwork from the audio file
     print subprocess.check_output(['ffmpeg', '-i', path, artout])
     
-    return (song, album, artist)
+    return (song, strip_title_junk(album), artist)
     
     
 def process_spotify_track(uri):
@@ -183,9 +183,11 @@ for path in paths:
     # Trim newline
     path = path.strip()
 
-    # Remove any trailing comments
+    # Remove any trailing comments and newline (and ignore any empty or comment-only lines)
     path = path.split("#")[0]
     path = path.strip()
+    if not path:
+        continue
 
     if path.startswith('cmd:'):
         (song, album, artist) = process_command(path)
