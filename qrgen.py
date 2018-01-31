@@ -20,6 +20,7 @@
 # SOFTWARE.
 #
 
+import argparse
 import hashlib
 import json
 import os.path
@@ -42,16 +43,24 @@ commands = {
   'cmd:whatsong': ('What\'s Playing?', 'https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png')
 }
 
-# Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
-# TODO: Read these from a configuration file (for now, plug in the values for your Spotify account)
-username = '<spotifyusername>'
-scope = 'user-library-read'
-token = util.prompt_for_user_token(username, scope, client_id='<client_id>', client_secret='<client_secret>', redirect_uri='http://localhost/')
-if token:
-    sp = spotipy.Spotify(auth=token)
+# Parse the command line arguments
+arg_parser = argparse.ArgumentParser(description='Generates an HTML page containing cards with embedded QR codes that can be interpreted by `qrplay`.')
+arg_parser.add_argument('--input', required=True, help='the file containing the list of commands and songs to generate')
+arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
+args = arg_parser.parse_args()
+print args
+
+if args.spotify_username:
+    # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
+    scope = 'user-library-read'
+    token = util.prompt_for_user_token(args.spotify_username, scope)
+    if token:
+        sp = spotipy.Spotify(auth=token)
+    else:
+        raise ValueError('Can\'t get Spotify token for ' + username)
 else:
-    print "Can't get token for", username
-    sys.exit(0)
+    # No Spotify
+    sp = None
 
 # Create the output directory
 dirname = os.getcwd()
@@ -62,7 +71,7 @@ if os.path.exists(outdir):
 os.mkdir(outdir)
 
 # Read the file containing the list of commands and songs to generate
-with open(sys.argv[1]) as f:
+with open(args.input) as f:
     paths = f.readlines()
 
 # The index of the current item being processed
@@ -153,6 +162,9 @@ def process_local_track(path):
     
     
 def process_spotify_track(uri):
+    if not sp:
+        raise ValueError('Must configure Spotify API access first using `--spotify-username`')
+
     track = sp.track(uri)
 
     print track
