@@ -20,19 +20,25 @@
 # SOFTWARE.
 #
 
+import argparse
 import json
 import os
 import sys
 import urllib
 import urllib2
 
-# Set to `True` to execute a series of commands listed in `debug.txt`
-DEBUG = False
+# Parse the command line arguments
+arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
+arg_parser.add_argument('--default-device', default='Dining Room', help='the name of your default device/room')
+arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
+arg_parser.add_argument('--skip-load', action='store_true', help='skip loading of the music library (useful if the server has already loaded it)')
+arg_parser.add_argument('--debug', action='store_true', help='read commands from `debug.txt` instead of launching scanner')
+args = arg_parser.parse_args()
+print args
 
-# TODO: Replace with the IP address of the machine running `node-sonos-http-api`
-base_url = 'http://10.0.1.6:5005'
-# TODO: Replace with the name of your default device/room
-current_device = 'Dining Room'
+
+base_url = 'http://' + args.hostname + ':5005'
+current_device = args.default_device
 last_qrcode = ''
 
 
@@ -56,6 +62,11 @@ def perform_room_request(path):
     perform_request(base_url + '/' + qdevice + '/' + path)
 
 
+def speak(phrase):
+    print('SPEAKING: \'{0}\''.format(phrase))
+    perform_room_request('say/' + urllib.quote(phrase))
+
+
 def handle_command(qrcode):
     global current_device
     global current_mode
@@ -67,30 +78,30 @@ def handle_command(qrcode):
         # source it from that room and play back to the current device; figure out
         # a better way to configure this so it's not hardcoded
         perform_room_request('linein/Dining%20Room')
-        speak = 'I\'ve activated the turntable'
+        phrase = 'I\'ve activated the turntable'
     elif qrcode == 'cmd:livingroom':
         current_device = 'Living Room'
-        speak = 'I\'m switching to the living room'
+        phrase = 'I\'m switching to the living room'
     elif qrcode == 'cmd:diningandkitchen':
         current_device = 'Dining Room'
-        speak = 'I\'m switching to the dining room'
+        phrase = 'I\'m switching to the dining room'
     elif qrcode == 'cmd:songonly':
         current_mode = Mode.PLAY_SONG_IMMEDIATELY
-        speak = 'Show me a card and I\'ll play that song right away'
+        phrase = 'Show me a card and I\'ll play that song right away'
     elif qrcode == 'cmd:wholealbum':
         current_mode = Mode.PLAY_ALBUM_IMMEDIATELY
-        speak = 'Show me a card and I\'ll play the whole album'
+        phrase = 'Show me a card and I\'ll play the whole album'
     elif qrcode == 'cmd:buildqueue':
         current_mode = Mode.BUILD_QUEUE
         perform_room_request('clearqueue')
-        speak = 'Show me a card and I\'ll add that song to the list'
+        phrase = 'Show me a card and I\'ll add that song to the list'
     elif qrcode == 'cmd:whatsong':
         perform_room_request('saysong')
         return
     else:
-        speak = 'Hmm, I don\'t recognize that command'
+        phrase = 'Hmm, I don\'t recognize that command'
 
-    perform_room_request('say/' + urllib.quote(speak))
+    speak(phrase)
 
 
 def handle_library_item(qrcode):
@@ -141,15 +152,7 @@ def handle_qrcode(qrcode):
     last_qrcode = qrcode
 
 
-if len(sys.argv) <= 1 or sys.argv[1] != 'noload':
-    # Preload library on startup (it takes a few seconds to prepare the cache)
-    print('Please wait, server is indexing the library...')
-    perform_room_request('musicsearch/library/load')
-    print('Indexing complete!')
-
-
-
-# Monitor the output of the QR code scanner
+# Monitor the output of the QR code scanner.
 def start_scan():
     while True:
         data = p.readline()
@@ -159,6 +162,7 @@ def start_scan():
             handle_qrcode(qrcode)
 
 
+# Read from the `debug.txt` file and handle one code at a time.
 def read_debug_script():
     from time import sleep
 
@@ -176,7 +180,19 @@ def read_debug_script():
             sleep(4)
 
 
-if DEBUG:
+speak('Hello, I\'m qrocodile.')
+
+if not args.skip_load:
+    # Preload library on startup (it takes a few seconds to prepare the cache)
+    print('Indexing the library...')
+    speak('Please give me a moment to gather my thoughts.')
+    perform_room_request('musicsearch/library/load')
+    print('Indexing complete!')
+    speak('I\'m ready now!')
+
+speak('Show me a card!')
+
+if args.debug:
     # Run through a list of codes from a local file
     read_debug_script()
 else:
