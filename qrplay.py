@@ -32,13 +32,23 @@ arg_parser = argparse.ArgumentParser(description='Translates QR codes detected b
 arg_parser.add_argument('--default-device', default='Dining Room', help='the name of your default device/room')
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--skip-load', action='store_true', help='skip loading of the music library (useful if the server has already loaded it)')
-arg_parser.add_argument('--debug', action='store_true', help='read commands from `debug.txt` instead of launching scanner')
+arg_parser.add_argument('--debug-file', help='read commands from a file instead of launching scanner')
 args = arg_parser.parse_args()
 print args
 
 
 base_url = 'http://' + args.hostname + ':5005'
-current_device = args.default_device
+
+# Load the most recently used device, if available, otherwise fall back on the `default-device` argument
+try:
+    with open('.last-device', 'r') as device_file:
+        current_device = device_file.read().replace('\n', '')
+        print('Defaulting to last used room: ' + current_device)
+except:
+    current_device = args.default_device
+    print('Initial room: ' + current_device)
+
+# Keep track of the last-seen code
 last_qrcode = ''
 
 
@@ -57,9 +67,20 @@ def perform_request(url):
     print(result)
 
 
+def perform_global_request(path):
+    perform_request(base_url + '/' + path)
+
+
 def perform_room_request(path):
     qdevice = urllib.quote(current_device)
     perform_request(base_url + '/' + qdevice + '/' + path)
+
+
+def switch_to_room(room):
+    #perform_global_request('pauseall')
+    current_device = room
+    with open(".last-device", "w") as device_file:
+        device_file.write(current_device)
 
 
 def speak(phrase):
@@ -73,17 +94,23 @@ def handle_command(qrcode):
 
     print('HANDLING COMMAND: ' + qrcode)
 
-    if qrcode == 'cmd:turntable':
+    if qrcode == 'cmd:playpause':
+        perform_room_request('playpause')
+        phrase = None
+    elif qrcode == 'cmd:next':
+        perform_room_request('next')
+        phrase = None
+    elif qrcode == 'cmd:turntable':
         # XXX: Our turntable is hooked up in the dining room, so we always want to
         # source it from that room and play back to the current device; figure out
         # a better way to configure this so it's not hardcoded
         perform_room_request('linein/Dining%20Room')
         phrase = 'I\'ve activated the turntable'
     elif qrcode == 'cmd:livingroom':
-        current_device = 'Living Room'
+        switch_to_room('Living Room')
         phrase = 'I\'m switching to the living room'
     elif qrcode == 'cmd:diningandkitchen':
-        current_device = 'Dining Room'
+        switch_to_room('Dining Room')
         phrase = 'I\'m switching to the dining room'
     elif qrcode == 'cmd:songonly':
         current_mode = Mode.PLAY_SONG_IMMEDIATELY
@@ -93,15 +120,20 @@ def handle_command(qrcode):
         phrase = 'Show me a card and I\'ll play the whole album'
     elif qrcode == 'cmd:buildqueue':
         current_mode = Mode.BUILD_QUEUE
+        perform_room_request('pause')
         perform_room_request('clearqueue')
         phrase = 'Show me a card and I\'ll add that song to the list'
     elif qrcode == 'cmd:whatsong':
         perform_room_request('saysong')
-        return
+        phrase = None
+    elif qrcode == 'cmd:whatnext':
+        perform_room_request('saynext')
+        phrase = None
     else:
         phrase = 'Hmm, I don\'t recognize that command'
 
-    speak(phrase)
+    if phrase:
+        speak(phrase)
 
 
 def handle_library_item(qrcode):
@@ -134,9 +166,9 @@ def handle_spotify_item(uri):
 def handle_qrcode(qrcode):
     global last_qrcode
 
-    # Ignore redundant codes, except for cases like "whatsong", where you might
-    # want to hear it multiple times
-    if qrcode == last_qrcode and qrcode != 'cmd:whatsong':
+    # Ignore redundant codes, except for commands like "whatsong", where you might
+    # want to perform it multiple times
+    if qrcode == last_qrcode and not qrcode.startswith('cmd:'):
         print('IGNORING REDUNDANT QRCODE: ' + qrcode)
         return
 
@@ -167,7 +199,7 @@ def read_debug_script():
     from time import sleep
 
     # Read codes from `debug.txt`
-    with open('debug.txt') as f:
+    with open(args.debug_file) as f:
         debug_codes = f.readlines()
 
     # Handle each code followed by a short delay
@@ -180,19 +212,20 @@ def read_debug_script():
             sleep(4)
 
 
+#perform_global_request('pauseall')
 speak('Hello, I\'m qrocodile.')
 
 if not args.skip_load:
     # Preload library on startup (it takes a few seconds to prepare the cache)
     print('Indexing the library...')
     speak('Please give me a moment to gather my thoughts.')
-    perform_room_request('musicsearch/library/load')
+    perform_room_request('musicsearch/library/loadifneeded')
     print('Indexing complete!')
     speak('I\'m ready now!')
 
 speak('Show me a card!')
 
-if args.debug:
+if args.debug_file:
     # Run through a list of codes from a local file
     read_debug_script()
 else:

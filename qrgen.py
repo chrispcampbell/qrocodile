@@ -29,26 +29,35 @@ import spotipy
 import spotipy.util as util
 import subprocess
 import sys
+import urllib
+import urllib2
 
 # Build a map of the known commands
 # TODO: Might be better to specify these in the input file to allow for more customization
 # (instead of hardcoding names/images here)
 commands = {
+  'cmd:playpause': ('Play / Pause', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_pause_circle_outline_black_48dp.png'),
+  'cmd:next': ('Skip to Next Song', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_skip_next_black_48dp.png'),
   'cmd:turntable': ('Turntable', 'http://moziru.com/images/record-player-clipart-vector-3.jpg'),
   'cmd:livingroom': ('Living Room', 'http://icons.iconarchive.com/icons/icons8/ios7/512/Household-Livingroom-icon.png'),
   'cmd:diningandkitchen': ('Dining Room / Kitchen', 'https://png.icons8.com/ios/540//dining-room.png'),
   'cmd:songonly': ('Play the Song Only', 'https://raw.githubusercontent.com/google/material-design-icons/master/image/drawable-xxxhdpi/ic_audiotrack_black_48dp.png'),
   'cmd:wholealbum': ('Play the Whole Album', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_album_black_48dp.png'),
   'cmd:buildqueue': ('Build List of Songs', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_playlist_add_black_48dp.png'),
-  'cmd:whatsong': ('What\'s Playing?', 'https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png')
+  'cmd:whatsong': ('What\'s Playing?', 'https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png'),
+  'cmd:whatnext': ('What\'s Next?', 'https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png')
 }
 
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Generates an HTML page containing cards with embedded QR codes that can be interpreted by `qrplay`.')
-arg_parser.add_argument('--input', required=True, help='the file containing the list of commands and songs to generate')
+arg_parser.add_argument('--input', help='the file containing the list of commands and songs to generate')
+arg_parser.add_argument('--list-library', action='store_true', help='list all available library tracks')
+arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
 args = arg_parser.parse_args()
 print args
+
+base_url = 'http://' + args.hostname + ':5005'
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
@@ -62,33 +71,18 @@ else:
     # No Spotify
     sp = None
 
-# Create the output directory
-dirname = os.getcwd()
-outdir = os.path.join(dirname, 'out')
-print(outdir)
-if os.path.exists(outdir):
-    shutil.rmtree(outdir)
-os.mkdir(outdir)
 
-# Read the file containing the list of commands and songs to generate
-with open(args.input) as f:
-    paths = f.readlines()
+def perform_request(url):
+    print(url)
+    response = urllib2.urlopen(url)
+    result = response.read()
+    print(result)
+    return result
 
-# The index of the current item being processed
-index = 0
 
-# Copy the CSS file into the output directory.  (Note the use of 'page-break-inside: avoid'
-# in `cards.css`; this prevents the card divs from being spread across multiple pages
-# when printed.)
-shutil.copyfile('cards.css', 'out/cards.css')
+def list_library_tracks():
+    perform_request(base_url + '/musicsearch/library/load')
 
-# Begin the HTML template
-html = '''
-<html>
-<head>
-  <link rel="stylesheet" href="cards.css">
-</head>
-'''
 
 # Removes extra junk from titles, e.g:
 #   (Original Motion Picture Soundtrack)
@@ -103,7 +97,7 @@ def strip_title_junk(title):
     return title
 
 
-def process_command(uri):
+def process_command(uri, index):
     (cmdname, arturl) = commands[uri]
     
     # Determine the output image file names
@@ -117,51 +111,9 @@ def process_command(uri):
     print subprocess.check_output(['curl', arturl, '-o', artout])
 
     return (cmdname, None, None)
-
-
-def process_local_track(path):
-    
-    def extract_metadata(key):
-        value = subprocess.check_output(['ffprobe', '-loglevel', 'error', '-show_entries', 'format_tags=' + key, '-of', 'default=noprint_wrappers=1:nokey=1', path])
-        return value.rstrip()
-    
-    # Extract the song/album/artist from the file's metadata
-    song = extract_metadata('title')
-    album = extract_metadata('album')
-    artist = extract_metadata('artist')
-    # genre = extract_metadata('genre')
-    # year = extract_metadata('date')
-
-    # Determine the output image file names
-    print(artist + " :: " + album)
-    qrout = 'out/{0}qr.png'.format(index)
-    artout = 'out/{0}art.jpg'.format(index)
-    
-    # Compute the MD5 hash of `"<artist> :: <album> :: <song>".lower()`.  This will be used
-    # to minimize the amount of data we need to store in the QR code.  Previously I
-    # stored the raw data (as JSON) in the QR code, but for very long names/title, this
-    # generates a fine-grained QR code that is difficult to read with the Raspberry Pi
-    # camera.  The camera is high-res, but the more pixels it pumps to the QR reader
-    # the slower it gets, so we need to prescale the camera output to find the sweet
-    # spot between fast and accurate QR detection.  Since this is just a dumb
-    # prototype, I've hacked up a fork of `node-sonos-http-api` that is able to locate a
-    # specific track by searching for this MD5 hash.
-    m = hashlib.md5()
-    m.update("{0} :: {1} :: {2}".format(artist, album, song).lower())
-    md5 = m.hexdigest()
-
-    # Create a QR code from the MD5 hash
-    qrdata = "lib:" + md5
-    print qrdata
-    print subprocess.check_output(['qrencode', '-o', qrout, qrdata])
-    
-    # Extract the artwork from the audio file
-    print subprocess.check_output(['ffmpeg', '-i', path, artout])
-    
-    return (song, strip_title_junk(album), artist)
     
     
-def process_spotify_track(uri):
+def process_spotify_track(uri, index):
     if not sp:
         raise ValueError('Must configure Spotify API access first using `--spotify-username`')
 
@@ -191,47 +143,108 @@ def process_spotify_track(uri):
     return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
 
 
-for path in paths:
-    # Trim newline
-    path = path.strip()
+def process_library_track(uri, index):
+    track_json = perform_request(base_url + '/musicsearch/library/metadata/' + uri)
+    track = json.loads(track_json)
+    print(track)
 
-    # Remove any trailing comments and newline (and ignore any empty or comment-only lines)
-    path = path.split("#")[0]
-    path = path.strip()
-    if not path:
-        continue
+    song = strip_title_junk(track['trackName'])
+    artist = strip_title_junk(track['artistName'])
+    album = strip_title_junk(track['albumName'])
+    arturl = track['artworkUrl']
 
-    if path.startswith('cmd:'):
-        (song, album, artist) = process_command(path)
-    elif path.startswith('spotify:'):
-        (song, album, artist) = process_spotify_track(path)
-    else:
-        (song, album, artist) = process_local_track(path)
+    # Determine the output image file names
+    qrout = 'out/{0}qr.png'.format(index)
+    artout = 'out/{0}art.jpg'.format(index)
 
-    # Generate the HTML for this card
-    qrimg = '{0}qr.png'.format(index)
-    artimg = '{0}art.jpg'.format(index)
-    html += '<div class="card">\n'
-    html += '  <img src="{0}" class="art"/>\n'.format(artimg)
-    html += '  <img src="{0}" class="qrcode"/>\n'.format(qrimg)
-    html += '  <div class="labels">\n'
-    html += '    <p class="song">{0}</p>\n'.format(song)
-    if artist:
-        html += '    <p class="artist"><span class="small">by</span> {0}</p>\n'.format(artist)
-    if album:
-        html += '    <p class="album"><span class="small">from</span> {0}</p>\n'.format(album)
-    html += '  </div>\n'
-    html += '</div>\n'
-    
-    if index % 2 == 1:
-        html += '<br style="clear: both;"/>\n'
-    
-    index += 1
+    # Create a QR code from the track URI
+    print subprocess.check_output(['qrencode', '-o', qrout, uri])
 
-html += '</html>\n'
+    # Fetch the artwork and save to the output directory
+    print subprocess.check_output(['curl', arturl, '-o', artout])
 
-print(html)
+    return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
 
-html_file = open('out/index.html', "w")
-html_file.write(html)
-html_file.close()
+
+def generate_cards():
+    # Create the output directory
+    dirname = os.getcwd()
+    outdir = os.path.join(dirname, 'out')
+    print(outdir)
+    if os.path.exists(outdir):
+        shutil.rmtree(outdir)
+    os.mkdir(outdir)
+
+    # Read the file containing the list of commands and songs to generate
+    with open(args.input) as f:
+        paths = f.readlines()
+
+    # The index of the current item being processed
+    index = 0
+
+    # Copy the CSS file into the output directory.  (Note the use of 'page-break-inside: avoid'
+    # in `cards.css`; this prevents the card divs from being spread across multiple pages
+    # when printed.)
+    shutil.copyfile('cards.css', 'out/cards.css')
+
+    # Begin the HTML template
+    html = '''
+<html>
+<head>
+  <link rel="stylesheet" href="cards.css">
+</head>
+'''
+
+    for path in paths:
+        # Trim newline
+        path = path.strip()
+
+        # Remove any trailing comments and newline (and ignore any empty or comment-only lines)
+        path = path.split("#")[0]
+        path = path.strip()
+        if not path:
+            continue
+
+        if path.startswith('cmd:'):
+            (song, album, artist) = process_command(path, index)
+        elif path.startswith('spotify:'):
+            (song, album, artist) = process_spotify_track(path, index)
+        elif path.startswith('lib:'):
+            (song, album, artist) = process_library_track(path, index)
+        else:
+            print('Failed to handle URI: ' + path)
+            exit(1)
+
+        # Generate the HTML for this card
+        qrimg = '{0}qr.png'.format(index)
+        artimg = '{0}art.jpg'.format(index)
+        html += '<div class="card">\n'
+        html += '  <img src="{0}" class="art"/>\n'.format(artimg)
+        html += '  <img src="{0}" class="qrcode"/>\n'.format(qrimg)
+        html += '  <div class="labels">\n'
+        html += '    <p class="song">{0}</p>\n'.format(song)
+        if artist:
+            html += '    <p class="artist"><span class="small">by</span> {0}</p>\n'.format(artist)
+        if album:
+            html += '    <p class="album"><span class="small">from</span> {0}</p>\n'.format(album)
+        html += '  </div>\n'
+        html += '</div>\n'
+
+        if index % 2 == 1:
+            html += '<br style="clear: both;"/>\n'
+
+        index += 1
+
+    html += '</html>\n'
+
+    print(html)
+
+    html_file = open('out/index.html', "w")
+    html_file.write(html)
+    html_file.close()
+
+
+if args.input:
+    generate_cards()
+elif args.list_library:
+    list_library_tracks()
