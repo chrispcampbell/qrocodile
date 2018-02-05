@@ -30,6 +30,7 @@ import urllib2
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
 arg_parser.add_argument('--default-device', default='Dining Room', help='the name of your default device/room')
+arg_parser.add_argument('--linein-source', default='Dining Room', help='the name of the device/room used as the line-in source')
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--skip-load', action='store_true', help='skip loading of the music library (useful if the server has already loaded it)')
 arg_parser.add_argument('--debug-file', help='read commands from a file instead of launching scanner')
@@ -77,7 +78,7 @@ def perform_room_request(path):
 
 
 def switch_to_room(room):
-    #perform_global_request('pauseall')
+    perform_global_request('pauseall')
     current_device = room
     with open(".last-device", "w") as device_file:
         device_file.write(current_device)
@@ -101,10 +102,8 @@ def handle_command(qrcode):
         perform_room_request('next')
         phrase = None
     elif qrcode == 'cmd:turntable':
-        # XXX: Our turntable is hooked up in the dining room, so we always want to
-        # source it from that room and play back to the current device; figure out
-        # a better way to configure this so it's not hardcoded
-        perform_room_request('linein/Dining%20Room')
+        perform_room_request('linein/' + urllib.quote(args.linein_source))
+        perform_room_request('play')
         phrase = 'I\'ve activated the turntable'
     elif qrcode == 'cmd:livingroom':
         switch_to_room('Living Room')
@@ -212,7 +211,7 @@ def read_debug_script():
             sleep(4)
 
 
-#perform_global_request('pauseall')
+perform_global_request('pauseall')
 speak('Hello, I\'m qrocodile.')
 
 if not args.skip_load:
