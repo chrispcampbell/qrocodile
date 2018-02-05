@@ -76,12 +76,14 @@ def perform_request(url):
     print(url)
     response = urllib2.urlopen(url)
     result = response.read()
-    print(result)
     return result
 
 
 def list_library_tracks():
-    perform_request(base_url + '/musicsearch/library/load')
+    result_json = perform_request(base_url + '/musicsearch/library/listall')
+    tracks = json.loads(result_json)['tracks']
+    for t in tracks:
+        print(t)
 
 
 # Removes extra junk from titles, e.g:
