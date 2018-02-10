@@ -1,3 +1,12 @@
+body {
+  margin: 0;
+}
+
+.singlecard {
+  width: 360px;
+  height: 320px;
+}
+
 .card {
   float: left;
   border: 1px dashed #999;

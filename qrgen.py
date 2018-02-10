@@ -51,6 +51,7 @@ commands = {
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Generates an HTML page containing cards with embedded QR codes that can be interpreted by `qrplay`.')
 arg_parser.add_argument('--input', help='the file containing the list of commands and songs to generate')
+arg_parser.add_argument('--generate-images', action='store_true', help='generate an individual PNG image for each card')
 arg_parser.add_argument('--list-library', action='store_true', help='list all available library tracks')
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
@@ -168,6 +169,51 @@ def process_library_track(uri, index):
     return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
 
 
+# Return the HTML content for a single card.
+def card_content_html(index, artist, album, song):
+    qrimg = '{0}qr.png'.format(index)
+    artimg = '{0}art.jpg'.format(index)
+
+    html = ''
+    html += '  <img src="{0}" class="art"/>\n'.format(artimg)
+    html += '  <img src="{0}" class="qrcode"/>\n'.format(qrimg)
+    html += '  <div class="labels">\n'
+    html += '    <p class="song">{0}</p>\n'.format(song)
+    if artist:
+        html += '    <p class="artist"><span class="small">by</span> {0}</p>\n'.format(artist)
+    if album:
+        html += '    <p class="album"><span class="small">from</span> {0}</p>\n'.format(album)
+    html += '  </div>\n'
+    return html
+
+
+# Generate a PNG version of an individual card (with no dashed lines).
+def generate_individual_card_image(index, artist, album, song):
+    # First generate an HTML file containing the individual card
+    html = ''
+    html += '<html>\n'
+    html += '<head>\n'
+    html += ' <link rel="stylesheet" href="cards.css">\n'
+    html += '</head>\n'
+    html += '<body>\n'
+
+    html += '<div class="singlecard">\n'
+    html += card_content_html(index, artist, album, song)
+    html += '</div>\n'
+
+    html += '</body>\n'
+    html += '</html>\n'
+
+    html_filename = 'out/{0}.html'.format(index)
+    with open(html_filename, 'w') as f:
+        f.write(html)
+
+    # Then convert the HTML to a PNG image (beware the hardcoded values; these need to align
+    # with the dimensions in `cards.css`)
+    png_filename = 'out/card{0}.png'.format(index)
+    print subprocess.check_output(['webkit2png', html_filename, '--scale=1.0', '--clipped', '--clipwidth=720', '--clipheight=640', '-o', png_filename])
+
+
 def generate_cards():
     # Create the output directory
     dirname = os.getcwd()
@@ -179,7 +225,7 @@ def generate_cards():
 
     # Read the file containing the list of commands and songs to generate
     with open(args.input) as f:
-        paths = f.readlines()
+        lines = f.readlines()
 
     # The index of the current item being processed
     index = 0
@@ -195,48 +241,44 @@ def generate_cards():
 <head>
   <link rel="stylesheet" href="cards.css">
 </head>
+<body>
 '''
 
-    for path in paths:
+    for line in lines:
         # Trim newline
-        path = path.strip()
+        line = line.strip()
 
         # Remove any trailing comments and newline (and ignore any empty or comment-only lines)
-        path = path.split("#")[0]
-        path = path.strip()
-        if not path:
+        line = line.split("#")[0]
+        line = line.strip()
+        if not line:
             continue
 
-        if path.startswith('cmd:'):
-            (song, album, artist) = process_command(path, index)
-        elif path.startswith('spotify:'):
-            (song, album, artist) = process_spotify_track(path, index)
-        elif path.startswith('lib:'):
-            (song, album, artist) = process_library_track(path, index)
+        if line.startswith('cmd:'):
+            (song, album, artist) = process_command(line, index)
+        elif line.startswith('spotify:'):
+            (song, album, artist) = process_spotify_track(line, index)
+        elif line.startswith('lib:'):
+            (song, album, artist) = process_library_track(line, index)
         else:
-            print('Failed to handle URI: ' + path)
+            print('Failed to handle URI: ' + line)
             exit(1)
 
-        # Generate the HTML for this card
-        qrimg = '{0}qr.png'.format(index)
-        artimg = '{0}art.jpg'.format(index)
+        # Append the HTML for this card
         html += '<div class="card">\n'
-        html += '  <img src="{0}" class="art"/>\n'.format(artimg)
-        html += '  <img src="{0}" class="qrcode"/>\n'.format(qrimg)
-        html += '  <div class="labels">\n'
-        html += '    <p class="song">{0}</p>\n'.format(song)
-        if artist:
-            html += '    <p class="artist"><span class="small">by</span> {0}</p>\n'.format(artist)
-        if album:
-            html += '    <p class="album"><span class="small">from</span> {0}</p>\n'.format(album)
-        html += '  </div>\n'
+        html += card_content_html(index, artist, album, song)
         html += '</div>\n'
+
+        if args.generate_images:
+            # Also generate an individual PNG for the card
+            generate_individual_card_image(index, artist, album, song)
 
         if index % 2 == 1:
             html += '<br style="clear: both;"/>\n'
 
         index += 1
 
+    html += '</body>\n'
     html += '</html>\n'
 
     print(html)
