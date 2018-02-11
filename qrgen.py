@@ -92,7 +92,7 @@ def list_library_tracks():
 #   - From <Movie>
 #   (Remastered & Expanded Edition)
 def strip_title_junk(title):
-    junk = [" (Original", " - From", " (Remaster", " [Remaster"]
+    junk = [' (Original', ' - From', ' (Remaster', ' [Remaster']
     for j in junk:
         index = title.find(j)
         if index >= 0:
@@ -210,8 +210,11 @@ def generate_individual_card_image(index, artist, album, song):
 
     # Then convert the HTML to a PNG image (beware the hardcoded values; these need to align
     # with the dimensions in `cards.css`)
-    png_filename = 'out/card{0}.png'.format(index)
+    png_filename = 'out/{0}'.format(index)
     print subprocess.check_output(['webkit2png', html_filename, '--scale=1.0', '--clipped', '--clipwidth=720', '--clipheight=640', '-o', png_filename])
+
+    # Rename the file to remove the extra `-clipped` suffix that `webkit2png` includes by default
+    os.rename(png_filename + '-clipped.png', png_filename + 'card.png')
 
 
 def generate_cards():
@@ -249,7 +252,7 @@ def generate_cards():
         line = line.strip()
 
         # Remove any trailing comments and newline (and ignore any empty or comment-only lines)
-        line = line.split("#")[0]
+        line = line.split('#')[0]
         line = line.strip()
         if not line:
             continue
@@ -283,9 +286,8 @@ def generate_cards():
 
     print(html)
 
-    html_file = open('out/index.html', "w")
-    html_file.write(html)
-    html_file.close()
+    with open('out/index.html', 'w') as f:
+        f.write(html)
 
 
 if args.input:
