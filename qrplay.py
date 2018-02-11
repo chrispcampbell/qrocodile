@@ -23,7 +23,9 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
+from time import sleep
 import urllib
 import urllib2
 
@@ -78,6 +80,8 @@ def perform_room_request(path):
 
 
 def switch_to_room(room):
+    global current_device
+
     perform_global_request('pauseall')
     current_device = room
     with open(".last-device", "w") as device_file:
@@ -89,8 +93,30 @@ def speak(phrase):
     perform_room_request('say/' + urllib.quote(phrase))
 
 
+# Causes the onboard green LED to blink on and off twice.  (This assumes Raspberry Pi 3 Model B; your
+# mileage may vary.)
+def blink_led():
+    duration = 0.15
+
+    def led_off():
+        subprocess.call("echo 0 > /sys/class/leds/led0/brightness", shell=True)
+
+    def led_on():
+        subprocess.call("echo 1 > /sys/class/leds/led0/brightness", shell=True)
+
+    # Technically we only need to do this once when the script launches
+    subprocess.call("echo none > /sys/class/leds/led0/trigger", shell=True)
+
+    led_on()
+    sleep(duration)
+    led_off()
+    sleep(duration)
+    led_on()
+    sleep(duration)
+    led_off()
+
+
 def handle_command(qrcode):
-    global current_device
     global current_mode
 
     print('HANDLING COMMAND: ' + qrcode)
@@ -119,9 +145,9 @@ def handle_command(qrcode):
         phrase = 'Show me a card and I\'ll play the whole album'
     elif qrcode == 'cmd:buildqueue':
         current_mode = Mode.BUILD_QUEUE
-        perform_room_request('pause')
+        #perform_room_request('pause')
         perform_room_request('clearqueue')
-        phrase = 'Show me a card and I\'ll add that song to the list'
+        phrase = 'Let\'s build a list of songs'
     elif qrcode == 'cmd:whatsong':
         perform_room_request('saysong')
         phrase = None
@@ -135,11 +161,11 @@ def handle_command(qrcode):
         speak(phrase)
 
 
-def handle_library_item(qrcode):
-    if not qrcode.startswith('lib:'):
+def handle_library_item(uri):
+    if not uri.startswith('lib:'):
         return
 
-    print('PLAYING FROM LIBRARY: ' + qrcode)
+    print('PLAYING FROM LIBRARY: ' + uri)
 
     if current_mode == Mode.BUILD_QUEUE:
         action = 'queuesongfromhash'
@@ -148,18 +174,20 @@ def handle_library_item(qrcode):
     else:
         action = 'playsongfromhash'
 
-    perform_room_request('musicsearch/library/{0}/{1}'.format(action, qrcode))
+    perform_room_request('musicsearch/library/{0}/{1}'.format(action, uri))
 
 
 def handle_spotify_item(uri):
     print('PLAYING FROM SPOTIFY: ' + uri)
 
     if current_mode == Mode.BUILD_QUEUE:
-        perform_room_request('spotify/queue/' + uri)
+        action = 'queue'
     elif current_mode == Mode.PLAY_ALBUM_IMMEDIATELY:
-        perform_room_request('spotify/clearqueueandplayalbum/' + uri)
+        action = 'clearqueueandplayalbum'
     else:
-        perform_room_request('spotify/clearqueueandplaysong/' + uri)
+        action = 'clearqueueandplaysong'
+
+    perform_room_request('spotify/{0}/{1}'.format(action, uri))
 
 
 def handle_qrcode(qrcode):
@@ -179,6 +207,12 @@ def handle_qrcode(qrcode):
         handle_spotify_item(qrcode)
     else:
         handle_library_item(qrcode)
+
+    # Blink the onboard LED to give some visual indication that a code was handled
+    # (especially useful for cases where there's no other auditory feedback, like
+    # when adding songs to the queue)
+    if not args.debug_file:
+        blink_led()
         
     last_qrcode = qrcode
 
@@ -195,8 +229,6 @@ def start_scan():
 
 # Read from the `debug.txt` file and handle one code at a time.
 def read_debug_script():
-    from time import sleep
-
     # Read codes from `debug.txt`
     with open(args.debug_file) as f:
         debug_codes = f.readlines()
