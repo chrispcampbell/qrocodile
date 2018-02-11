@@ -156,6 +156,21 @@ def process_library_track(uri, index):
     album = strip_title_junk(track['albumName'])
     arturl = track['artworkUrl']
 
+    # XXX: Sonos strips the "The" prefix for bands that start with "The" (it appears to do this
+    # only in listing contexts; when querying the current/next queue track it still includes
+    # the "The").  As a dumb hack (to preserve the "The") we can look at the raw URI for the
+    # track (this assumes an iTunes-style directory structure), parse out the artist directory
+    # name and see if it starts with "The".
+    from urlparse import urlparse
+    uri_parts = urlparse(track['uri'])
+    uri_path = uri_parts.path
+    print(uri_path)
+    (uri_path, song_part) = os.path.split(uri_path)
+    (uri_path, album_part) = os.path.split(uri_path)
+    (uri_path, artist_part) = os.path.split(uri_path)
+    if artist_part.startswith('The%20'):
+        artist = 'The ' + artist
+
     # Determine the output image file names
     qrout = 'out/{0}qr.png'.format(index)
     artout = 'out/{0}art.jpg'.format(index)
