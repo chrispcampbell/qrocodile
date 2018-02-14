@@ -1,3 +1,6 @@
+lib:86d7b406b0f93a5e0993ce77b539cad2 # La Bonne Soupe > Literary Gentlemen > Oaf King, Again
+spotify:track:4uip0lLkMKl1nwchsdXs1r # Sweet > Fox On The Run
+lib:8b956f667499399de1b5b82dca9ac5e0 # Misfits > Walk Among Us > 20 Eyes
 cmd:playpause
 cmd:next
 cmd:turntable
@@ -8,6 +11,3 @@ cmd:wholealbum
 cmd:buildqueue
 cmd:whatsong
 cmd:whatnext
-lib:86d7b406b0f93a5e0993ce77b539cad2 # La Bonne Soupe > Literary Gentlemen > Oaf King, Again
-spotify:track:4uip0lLkMKl1nwchsdXs1r # Sweet > Fox On The Run
-lib:8b956f667499399de1b5b82dca9ac5e0 # Misfits > Walk Among Us > 20 Eyes
