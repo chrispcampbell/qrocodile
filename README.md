@@ -4,7 +4,11 @@ A kid-friendly system for controlling Sonos with QR codes.
 
 ## What Is It?
 
-On the hardware side, it's just a camera-attached Raspberry Pi nested inside some green LEGO and running some custom software that scans QR codes and translates them into commands that control your Sonos system.
+On the hardware side, it's just a camera-attached Raspberry Pi nested inside some green LEGO and running some custom software that scans QR codes and translates them into commands that control your Sonos system:
+
+<p align="center">
+<img src="docs/images/qroc-photo-front.jpg" width="40%" height="40%"> <img src="docs/images/qroc-photo-back.jpg" width="40%" height="40%">
+</p>
 
 On the software side, there are two separate Python scripts:
 
