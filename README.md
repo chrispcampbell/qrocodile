@@ -98,7 +98,9 @@ Finally, generate some cards and view the output in your browser:
 
 It'll look something like this:
 
+<p align="center">
 <img src="docs/images/sheet.jpg" width="50%" height="50%">
+</p>
 
 ### 4. Start `qrplay`
 
@@ -128,19 +130,31 @@ Currently `qrgen` and `qrplay` have built-in support for two different kinds of 
 
 Song cards can be generated for tracks in your music library or from Spotify, and can be used to play just that song, add that song to the queue, or play the entire album.  For example:
 
+<p align="center">
 <img src="docs/images/song.png" width="40%" height="40%" style="border: 1px #ddd solid;">
+</p>
 
 Command cards are used to control your Sonos system, performing actions like switching to a different room, activating the line-in input on a certain device, or pausing/playing the active device.  Here are the commands that are currently supported:
 
+<p align="center">
 <img src="docs/images/cmd-living.png" width="20%" height="20%" style="border: 1px #ddd solid;"> <img src="docs/images/cmd-dining.png" width="20%" height="20%" style="border: 1px #ddd solid;">
+</p>
 
+<p align="center">
 <img src="docs/images/cmd-pause.png" width="20%" height="20%" style="border: 1px #ddd solid;"> <img src="docs/images/cmd-skip.png" width="20%" height="20%" style="border: 1px #ddd solid;">
+</p>
 
+<p align="center">
 <img src="docs/images/cmd-songonly.png" width="20%" height="20%" style="border: 1px #ddd solid;"> <img src="docs/images/cmd-wholealbum.png" width="20%" height="20%" style="border: 1px #ddd solid;">
+</p>
 
+<p align="center">
 <img src="docs/images/cmd-buildlist.png" width="20%" height="20%" style="border: 1px #ddd solid;"> <img src="docs/images/cmd-turntable.png" width="20%" height="20%" style="border: 1px #ddd solid;">
+</p>
 
+<p align="center">
 <img src="docs/images/cmd-whatsong.png" width="20%" height="20%" style="border: 1px #ddd solid;"> <img src="docs/images/cmd-whatnext.png" width="20%" height="20%" style="border: 1px #ddd solid;">
+</p>
 
 ## The Backstory
 
