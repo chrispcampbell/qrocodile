@@ -1,4 +1,4 @@
-##! python3
+#! python3
 
 import argparse
 import hashlib
@@ -9,8 +9,8 @@ import spotipy
 import spotipy.util as util
 import subprocess
 import sys
-import requests
-import pyqrcode  # https://pypi.python.org/pypi/PyQRCode
+import requests  # replaces urllib & urllib2
+import pyqrcode  # https://pypi.python.org/pypi/PyQRCode replaces system qrencode
 
 # Build a map of the known commands
 # TODO: Might be better to specify these in the input file to allow for more customization
@@ -38,8 +38,7 @@ arg_parser.add_argument('--spotify-username', help='the username used to set up 
 args = arg_parser.parse_args()
 print(args)
 
-hostname = '192.168.188.14'
-base_url = 'http://' + hostname + ':5005'
+base_url = 'http://' + args.hostname + ':5005'
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
@@ -116,7 +115,6 @@ def process_spotify_track(uri, index):
 
     song = strip_title_junk(track['name'])
     artist = strip_title_junk(track['artists'][0]['name'])
-    #print("artist = " + str(type(artist))) # confirming that artist is a str
     album = strip_title_junk(track['album']['name'])
     arturl = track['album']['images'][0]['url']
     
@@ -223,6 +221,7 @@ def generate_individual_card_image(index, artist, album, song):
 
     # Then convert the HTML to a PNG image (beware the hardcoded values; these need to align
     # with the dimensions in `cards.css`)
+    ## disabled conversion of HTML to PNG
     ##png_filename = 'out/{0}'.format(index)
     ##print(subprocess.check_output(['webkit2png', html_filename, '--scale=1.0', '--clipped', '--clipwidth=720', '--clipheight=640', '-o', png_filename]))
 
