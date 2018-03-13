@@ -27,9 +27,7 @@ import os
 import subprocess
 import sys
 from time import sleep
-#import urllib
-#import urllib2
-import requests
+import requests  # replaces urllib & urllib2
 
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
@@ -192,13 +190,13 @@ def handle_spotify_item(uri):
         action = 'queue'
     elif current_mode == Mode.PLAY_ALBUM_IMMEDIATELY:
         #action = 'clearqueueandplayalbum'
-        action = 'now'
+        action = 'now'  # using 'now' as I could not find command clearqueueandplayalbum
     else:
         #action = 'clearqueueandplaysong'
-        action = 'now'
+        action = 'now'  # using 'now' as I could not find command clearqueueandplayalbum
 
 ## example curl request:
-## curl -X GET http://192.168.188.14:5005/Living%20Room/Spotify/now/spotify:track:7Bz8yww6UMbTgTVLG6zbI4
+## curl -X GET http://<hostname>:5005/Living%20Room/Spotify/now/spotify:track:7Bz8yww6UMbTgTVLG6zbI4
 
     perform_room_request('spotify/{0}/{1}'.format(action, uri))
 
