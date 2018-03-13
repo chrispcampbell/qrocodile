@@ -1,3 +1,4 @@
+#! python3
 #
 # Copyright (c) 2018 Chris Campbell
 #
@@ -26,19 +27,19 @@ import os
 import subprocess
 import sys
 from time import sleep
-import urllib
-import urllib2
+#import urllib
+#import urllib2
+import requests
 
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
-arg_parser.add_argument('--default-device', default='Dining Room', help='the name of your default device/room')
-arg_parser.add_argument('--linein-source', default='Dining Room', help='the name of the device/room used as the line-in source')
-arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
+arg_parser.add_argument('--default-device', default='Living Room', help='the name of your default device/room')
+arg_parser.add_argument('--linein-source', default='Living Room', help='the name of the device/room used as the line-in source')
+arg_parser.add_argument('--hostname', default='192.168.188.14', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--skip-load', action='store_true', help='skip loading of the music library (useful if the server has already loaded it)')
 arg_parser.add_argument('--debug-file', help='read commands from a file instead of launching scanner')
 args = arg_parser.parse_args()
-print args
-
+print(args)
 
 base_url = 'http://' + args.hostname + ':5005'
 
@@ -65,8 +66,8 @@ current_mode = Mode.PLAY_SONG_IMMEDIATELY
 
 def perform_request(url):
     print(url)
-    response = urllib2.urlopen(url)
-    result = response.read()
+    response = requests.get(url) # equivalent to urllib2.urlopen(url)
+    result = response.text # equivalent to urllib2.read()
     print(result)
 
 
@@ -75,7 +76,12 @@ def perform_global_request(path):
 
 
 def perform_room_request(path):
-    qdevice = urllib.quote(current_device)
+    #qdevice = urllib.quote(current_device)
+    #qdevice=current_device # requests should take care of the decoding
+    if " " in current_device:
+        qdevice=current_device.replace(" ", "%20")
+    else:
+        qdevice=current_device
     perform_request(base_url + '/' + qdevice + '/' + path)
 
 
@@ -90,7 +96,8 @@ def switch_to_room(room):
 
 def speak(phrase):
     print('SPEAKING: \'{0}\''.format(phrase))
-    perform_room_request('say/' + urllib.quote(phrase))
+    #perform_room_request('say/' + urllib.quote(phrase))
+    perform_room_request('say/' + phrase)
 
 
 # Causes the onboard green LED to blink on and off twice.  (This assumes Raspberry Pi 3 Model B; your
@@ -128,7 +135,8 @@ def handle_command(qrcode):
         perform_room_request('next')
         phrase = None
     elif qrcode == 'cmd:turntable':
-        perform_room_request('linein/' + urllib.quote(args.linein_source))
+        #perform_room_request('linein/' + urllib.quote(args.linein_source))
+        perform_room_request('linein/' + args.linein_source)
         perform_room_request('play')
         phrase = 'I\'ve activated the turntable'
     elif qrcode == 'cmd:livingroom':
@@ -183,9 +191,14 @@ def handle_spotify_item(uri):
     if current_mode == Mode.BUILD_QUEUE:
         action = 'queue'
     elif current_mode == Mode.PLAY_ALBUM_IMMEDIATELY:
-        action = 'clearqueueandplayalbum'
+        #action = 'clearqueueandplayalbum'
+        action = 'now'
     else:
-        action = 'clearqueueandplaysong'
+        #action = 'clearqueueandplaysong'
+        action = 'now'
+
+## example curl request:
+## curl -X GET http://192.168.188.14:5005/Living%20Room/Spotify/now/spotify:track:7Bz8yww6UMbTgTVLG6zbI4
 
     perform_room_request('spotify/{0}/{1}'.format(action, uri))
 
@@ -261,7 +274,9 @@ if args.debug_file:
     read_debug_script()
 else:
     # Start the QR code reader
-    p = os.popen('/usr/bin/zbarcam --prescale=300x200', 'r')
+    ## --nodisplay required as running pi headless
+    ## had the error "spawning input thread: Invalid argument (22)"
+    p = os.popen('/usr/bin/zbarcam --nodisplay --prescale=300x200', 'r')
     try:
         start_scan()
     except KeyboardInterrupt:

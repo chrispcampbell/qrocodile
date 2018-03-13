@@ -1,24 +1,4 @@
-#
-# Copyright (c) 2018 Chris Campbell
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
+##! python3
 
 import argparse
 import hashlib
@@ -29,8 +9,8 @@ import spotipy
 import spotipy.util as util
 import subprocess
 import sys
-import urllib
-import urllib2
+import requests
+import pyqrcode  # https://pypi.python.org/pypi/PyQRCode
 
 # Build a map of the known commands
 # TODO: Might be better to specify these in the input file to allow for more customization
@@ -56,9 +36,10 @@ arg_parser.add_argument('--list-library', action='store_true', help='list all av
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
 args = arg_parser.parse_args()
-print args
+print(args)
 
-base_url = 'http://' + args.hostname + ':5005'
+hostname = '192.168.188.14'
+base_url = 'http://' + hostname + ':5005'
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
@@ -75,12 +56,12 @@ else:
 
 def perform_request(url):
     print(url)
-    response = urllib2.urlopen(url)
-    result = response.read()
+    response = requests.get(url) # equivalent to urllib2.urlopen(url)
+    result = response.text # equivalent to urllib2.read()
     return result
 
 
-def list_library_tracks():
+def list_library_tracks(): #not used/doesn't work
     result_json = perform_request(base_url + '/musicsearch/library/listall')
     tracks = json.loads(result_json)['tracks']
     for t in tracks:
@@ -102,34 +83,40 @@ def strip_title_junk(title):
 
 def process_command(uri, index):
     (cmdname, arturl) = commands[uri]
-    
+    print('def process_command(uri, index):')
+
     # Determine the output image file names
     qrout = 'out/{0}qr.png'.format(index)
     artout = 'out/{0}art.jpg'.format(index)
     
     # Create a QR code from the command URI
-    print subprocess.check_output(['qrencode', '-o', qrout, uri])
+    ##print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
+    qr1 = pyqrcode.create(uri)
+    qr1.png(qrout, scale=6)
+    qr1.show()
 
     # Fetch the artwork and save to the output directory
-    print subprocess.check_output(['curl', arturl, '-o', artout])
+    print(subprocess.check_output(['curl', arturl, '-o', artout]))
 
     return (cmdname, None, None)
     
     
 def process_spotify_track(uri, index):
+    print('def process_spotify_track(uri, index):')
     if not sp:
         raise ValueError('Must configure Spotify API access first using `--spotify-username`')
 
     track = sp.track(uri)
 
-    print track
-    # print 'track    : ' + track['name']
+    print(track)
+    # print('track    : ' + track['name'])
     # print 'artist   : ' + track['artists'][0]['name']
     # print 'album    : ' + track['album']['name']
     # print 'cover art: ' + track['album']['images'][0]['url']
-    
+
     song = strip_title_junk(track['name'])
     artist = strip_title_junk(track['artists'][0]['name'])
+    #print("artist = " + str(type(artist))) # confirming that artist is a str
     album = strip_title_junk(track['album']['name'])
     arturl = track['album']['images'][0]['url']
     
@@ -138,15 +125,20 @@ def process_spotify_track(uri, index):
     artout = 'out/{0}art.jpg'.format(index)
     
     # Create a QR code from the track URI
-    print subprocess.check_output(['qrencode', '-o', qrout, uri])
+    ##print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
+    qr1 = pyqrcode.create(uri)
+    qr1.png(qrout, scale=6)
+    qr1.show()
 
     # Fetch the artwork and save to the output directory
-    print subprocess.check_output(['curl', arturl, '-o', artout])
-
-    return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
+    print(subprocess.check_output(['curl', arturl, '-o', artout]))
+    
+    #return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
+    return (song, album, artist) # removed encoding into utf-8 as it turns str into bytes
 
 
 def process_library_track(uri, index):
+    print('def process_library_track(uri, index):')
     track_json = perform_request(base_url + '/musicsearch/library/metadata/' + uri)
     track = json.loads(track_json)
     print(track)
@@ -176,16 +168,21 @@ def process_library_track(uri, index):
     artout = 'out/{0}art.jpg'.format(index)
 
     # Create a QR code from the track URI
-    print subprocess.check_output(['qrencode', '-o', qrout, uri])
+##    print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
+    qr1 = pyqrcode.create(uri)
+    qr1.png(qrout, scale=6)
+    qr1.show()
 
     # Fetch the artwork and save to the output directory
-    print subprocess.check_output(['curl', arturl, '-o', artout])
+    print(subprocess.check_output(['curl', arturl, '-o', artout]))
 
     return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
 
 
 # Return the HTML content for a single card.
 def card_content_html(index, artist, album, song):
+    print('def card_content_html(index, artist, album, song):')
+    # print(str(song) + "is of type " + str(type(song))) # troubleshooting
     qrimg = '{0}qr.png'.format(index)
     artimg = '{0}art.jpg'.format(index)
 
@@ -204,6 +201,7 @@ def card_content_html(index, artist, album, song):
 
 # Generate a PNG version of an individual card (with no dashed lines).
 def generate_individual_card_image(index, artist, album, song):
+    print('def generate_individual_card_image(index, artist, album, song):')
     # First generate an HTML file containing the individual card
     html = ''
     html += '<html>\n'
@@ -225,14 +223,15 @@ def generate_individual_card_image(index, artist, album, song):
 
     # Then convert the HTML to a PNG image (beware the hardcoded values; these need to align
     # with the dimensions in `cards.css`)
-    png_filename = 'out/{0}'.format(index)
-    print subprocess.check_output(['webkit2png', html_filename, '--scale=1.0', '--clipped', '--clipwidth=720', '--clipheight=640', '-o', png_filename])
+    ##png_filename = 'out/{0}'.format(index)
+    ##print(subprocess.check_output(['webkit2png', html_filename, '--scale=1.0', '--clipped', '--clipwidth=720', '--clipheight=640', '-o', png_filename]))
 
     # Rename the file to remove the extra `-clipped` suffix that `webkit2png` includes by default
-    os.rename(png_filename + '-clipped.png', png_filename + 'card.png')
+    ##os.rename(png_filename + '-clipped.png', png_filename + 'card.png')
 
 
 def generate_cards():
+    print('def generate_cards():')
     # Create the output directory
     dirname = os.getcwd()
     outdir = os.path.join(dirname, 'out')
