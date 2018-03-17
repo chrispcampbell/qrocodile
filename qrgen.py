@@ -40,7 +40,7 @@ print(args)
 
 base_url = 'http://' + args.hostname + ':5005'
 
-if args.spotify_username:
+if args.spotify-username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
     scope = 'user-library-read'
     token = util.prompt_for_user_token(args.spotify_username, scope)
@@ -108,6 +108,40 @@ def process_spotify_track(uri, index):
     track = sp.track(uri)
 
     print(track)
+    # print('track    : ' + track['name'])
+    # print 'artist   : ' + track['artists'][0]['name']
+    # print 'album    : ' + track['album']['name']
+    # print 'cover art: ' + track['album']['images'][0]['url']
+
+    song = strip_title_junk(track['name'])
+    artist = strip_title_junk(track['artists'][0]['name'])
+    album = strip_title_junk(track['album']['name'])
+    arturl = track['album']['images'][0]['url']
+    
+    # Determine the output image file names
+    qrout = 'out/{0}qr.png'.format(index)
+    artout = 'out/{0}art.jpg'.format(index)
+    
+    # Create a QR code from the track URI
+    ##print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
+    qr1 = pyqrcode.create(uri)
+    qr1.png(qrout, scale=6)
+    qr1.show()
+
+    # Fetch the artwork and save to the output directory
+    print(subprocess.check_output(['curl', arturl, '-o', artout]))
+    
+    #return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
+    return (song, album, artist) # removed encoding into utf-8 as it turns str into bytes
+
+def process_spotify_album(uri, index):
+
+    print('def process_spotify_album(uri, index):')
+    if not sp:
+        raise ValueError('Must configure Spotify API access first using `--spotify-username`')
+
+    print(track)
+    print(album)
     # print('track    : ' + track['name'])
     # print 'artist   : ' + track['artists'][0]['name']
     # print 'album    : ' + track['album']['name']
@@ -235,9 +269,10 @@ def generate_cards():
     dirname = os.getcwd()
     outdir = os.path.join(dirname, 'out')
     print(outdir)
-    if os.path.exists(outdir):
-        shutil.rmtree(outdir)
-    os.mkdir(outdir)
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
+    
 
     # Read the file containing the list of commands and songs to generate
     with open(args.input) as f:
