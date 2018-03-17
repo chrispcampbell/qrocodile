@@ -195,10 +195,41 @@ def handle_spotify_item(uri):
         #action = 'clearqueueandplaysong'
         action = 'now'  # using 'now' as I could not find command clearqueueandplayalbum
 
-## example curl request:
-## curl -X GET http://<hostname>:5005/Living%20Room/Spotify/now/spotify:track:7Bz8yww6UMbTgTVLG6zbI4
-
     perform_room_request('spotify/{0}/{1}'.format(action, uri))
+
+def handle_spotify_album(uri):
+    print('PLAYING ALBUM FROM SPOTIFY: ' + uri)
+    
+    album_raw = sp.album(uri)
+    album_name = album_raw["name"]
+    artist_name = album_raw["artists"][0]["name"]
+
+    # crating and updating the track list   
+    album_tracks_raw = sp.album_tracks(uri,limit=50,offset=0)
+    album_tracks = {}
+
+    # clear the sonos queue
+    action = 'clearqueue'
+    perform_room_request('{0}'.format(action))
+        
+    for track in album_tracks_raw['items']:
+        track_number = track["track_number"]
+        track_name = track["name"]
+        track_uri = track["uri"]
+        album_tracks.update({track_number: {}})
+        album_tracks[track_number].update({"uri" : track_uri})
+        album_tracks[track_number].update({"name" : track_name})
+        print(track_number)
+        if track_number == int("1"):
+            # play track 1 immediately
+            action = 'now'
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+            #action = 'play'
+            #perform_room_request('{0}'.format(action))
+        else:
+            # add all remaining tracks to queue
+            action = "queue"
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
 
 
 def handle_qrcode(qrcode):
@@ -214,6 +245,12 @@ def handle_qrcode(qrcode):
 
     if qrcode.startswith('cmd:'):
         handle_command(qrcode)
+    elif qrcode.startswith('spotify:album:'):
+        # CONCEPT = OK!
+        handle_spotify_album(qrcode)
+    elif qrcode.startswith('spotify:artist:'):
+        # NOT READY
+        handle_spotify_artist(qrcode)
     elif qrcode.startswith('spotify:'):
         handle_spotify_item(qrcode)
     else:

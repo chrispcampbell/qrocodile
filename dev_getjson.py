@@ -1,7 +1,6 @@
 #! python3
 
 import argparse
-import spotipy
 import json
 import sys
 import os.path
@@ -125,7 +124,6 @@ def process_spotify_album(uri, index):
     tracks_all["Album"].update({"Tracks": {}})
     
     for track in albumtracks['items']:
-        #track_list.append(track)
         track_number = track["track_number"]
         track_name = track["name"]
         track_uri = track["uri"]
@@ -136,14 +134,37 @@ def process_spotify_album(uri, index):
         tracks_all["Album"]["Tracks"].update(track_list)
 
     current_path = os.getcwd()
-    output_file_tracks = "tracks"
-    output_file_album = "album"
+    output_file_tracks = album_name + " tracks"
+    output_file_album = album_name
     output_path_tracks = str(current_path + "/json_out/" + output_file_tracks + ".json")
+    output_path_tracks_raw = str(current_path + "/json_out/" + output_file_tracks + "_raw.json")
     output_path_album = str(current_path + "/json_out/" + output_file_album + ".json")
+    output_path_album_raw = str(current_path + "/json_out/" + output_file_album + "_raw.json")
     
+    # creates file <album>.json with the minimal info
     with open(output_path_album,"w") as file:
         json.dump(tracks_all,file,indent=2)
+    # creates file <album>_raw.json with all the output of the album:uri
+    with open(output_path_album_raw,"w") as file:
+        json.dump(album,file,indent=2)
+    # creates file <album_tracks>_raw.json with all the output of the album_tracks:uri
+    with open(output_path_tracks_raw,"w") as file:
+        json.dump(albumtracks,file,indent=2)
 
+
+    ## node-sonos-http-api ##
+    #/RoomName/spotify/now/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
+    #/RoomName/spotify/next/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
+    #/RoomName/spotify/queue/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
+
+    ## /now ##
+    # get_request(tracks_all["Album"]["Tracks"]["1"])
+    ## /queue ##
+    # 
+    #for track in albumtracks['items']:
+    # clearqueue
+    # queue
+    #    get_request(tracks_all["Album"]["Tracks"][track])
 
     #song = strip_title_junk(track['name'])
     #artist = strip_title_junk(track['artists'][0]['name'])
