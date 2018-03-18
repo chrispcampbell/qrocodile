@@ -52,7 +52,6 @@ else:
     # No Spotify
     sp = None
 
-
 def perform_request(url):
     print(url)
     response = requests.get(url) # equivalent to urllib2.urlopen(url)

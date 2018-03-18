@@ -6,12 +6,17 @@ import sys
 import os.path
 import spotipy
 import spotipy.util as util
+import requests
 
 arg_parser = argparse.ArgumentParser(description='Generates .json files')
 arg_parser.add_argument('--input', help='the file containing the list of commands and songs to generate')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
+arg_parser.add_argument('--get-rooms', help='list available rooms')
 args = arg_parser.parse_args()
 print(args)
+
+hostname = "192.168.188.14"
+base_url = 'http://' + hostname + ':5005'
 
 # Login to Spotify
 if args.spotify_username:
@@ -23,6 +28,25 @@ if args.spotify_username:
         raise ValueError('Can\'t get Spotify token for ' + username)
 else:
     sp = None
+
+def perform_request(url):
+    print(url)
+    response = requests.get(url) 
+    result = response.text 
+    return result
+
+def get_rooms():
+    rooms_raw=perform_request(base_url + '/zones')
+    rooms_json = json.loads(rooms_raw)
+
+    current_path = os.getcwd()
+    output_file_zones = "zones"
+    output_path_zones_raw = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
+    
+    with open(output_path_zones_raw,"w") as file:
+        json.dump(rooms_json,file,indent=2)
+    print("Created file: " + output_path_zones_raw)
+
 
 # Removes extra junk from titles, e.g:
 #   (Original Motion Picture Soundtrack)
@@ -179,3 +203,5 @@ def process_spotify_album(uri, index):
 
 if args.input:
     dump_json()
+if args.get_rooms:
+    get_rooms()
