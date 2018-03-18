@@ -28,6 +28,8 @@ import subprocess
 import sys
 from time import sleep
 import requests  # replaces urllib & urllib2
+import spotipy
+import spotipy.util as util
 
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
@@ -36,10 +38,24 @@ arg_parser.add_argument('--linein-source', default='Living Room', help='the name
 arg_parser.add_argument('--hostname', default='192.168.188.14', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--skip-load', action='store_true', help='skip loading of the music library (useful if the server has already loaded it)')
 arg_parser.add_argument('--debug-file', help='read commands from a file instead of launching scanner')
+arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
 args = arg_parser.parse_args()
 print(args)
 
 base_url = 'http://' + args.hostname + ':5005'
+
+if args.spotify_username:
+    # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
+    scope = 'user-library-read'
+    token = util.prompt_for_user_token(args.spotify_username, scope)
+    if token:
+        sp = spotipy.Spotify(auth=token)
+    else:
+        raise ValueError('Can\'t get Spotify token for ' + username)
+else:
+    # No Spotify
+    sp = None
+
 
 # Load the most recently used device, if available, otherwise fall back on the `default-device` argument
 try:
