@@ -24,6 +24,18 @@ if args.spotify_username:
 else:
     sp = None
 
+# Removes extra junk from titles, e.g:
+#   (Original Motion Picture Soundtrack)
+#   - From <Movie>
+#   (Remastered & Expanded Edition)
+def strip_title_junk(title):
+    junk = [' (Original', ' - From', ' (Remaster', ' [Remaster']
+    for j in junk:
+        index = title.find(j)
+        if index >= 0:
+            return title[:index]
+    return title
+
 def dump_json():
     # Create the output directory in the current path
     dirname = os.getcwd()
@@ -101,6 +113,10 @@ def process_spotify_album(uri, index):
         raise ValueError('Must configure Spotify API access first using `--spotify-username`')
     
     album = sp.album(uri)
+    
+    # keeping the strip_title_junk as optional
+    #album_name = strip_title_junk(album['name'])
+    #artist_name = strip_title_junk(album['artists'][0]['name'])
     album_name = album["name"]
     artist_name = album["artists"][0]["name"]
     print("\n")
@@ -156,49 +172,10 @@ def process_spotify_album(uri, index):
     #/RoomName/spotify/now/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
     #/RoomName/spotify/next/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
     #/RoomName/spotify/queue/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
-
-    ## /now ##
-    # get_request(tracks_all["Album"]["Tracks"]["1"])
-    ## /queue ##
-    # 
-    #for track in albumtracks['items']:
-    # clearqueue
-    # queue
-    #    get_request(tracks_all["Album"]["Tracks"][track])
-
-    #song = strip_title_junk(track['name'])
-    #artist = strip_title_junk(track['artists'][0]['name'])
-    #album = strip_title_junk(track['album']['name'])
-    #arturl = track['album']['images'][0]['url']
         
     #return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
     #return (song, album, artist) # removed encoding into utf-8 as it turns str into bytes
     return (album_name,artist_name)
-
-def get_artist_id(name=None):
-  results = sp.search(q='artist:' + name, type='artist')
-  for item in results['artists']['items']:
-    print("{0}: {1}, popularity: {2}".format(item['name'], item['id'], item['popularity']))
-  return results
- 
-def get_all_albums(artist_id=None):
-    sp = credintials_process()
-    artist_name = sp.artist(artist_id)['name']
-    print("{0}の曲を取得します".format(artist_name))
-     
-    albums = sp.artist_albums(artist_id)
-    album_list = []
-    for album in albums['items']:
-        album_list.append(album['id'])
-    return album_list
-  
-def get_all_tracks(album_id=None):
-    sp = credintials_process()
-    tracks = sp.album_tracks(album_id)
-    track_list = []
-    for track in tracks['items']:
-        track_list.append(track['name'])
-    return track_list
 
 if args.input:
     dump_json()
