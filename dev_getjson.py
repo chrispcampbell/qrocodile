@@ -35,18 +35,45 @@ def perform_request(url):
     result = response.text 
     return result
 
-def get_rooms():
-    rooms_raw=perform_request(base_url + '/zones')
-    rooms_json = json.loads(rooms_raw)
+def perform_request_json(url):
+    print(url)
+    response = requests.get(url) 
+    result = response.json() 
+    return result
 
+def get_rooms():
+    rooms_raw = perform_request(base_url + '/zones')
+    rooms_raw = json.loads(rooms_raw)
+    rooms_json=perform_request_json(base_url + '/zones')
+    
     current_path = os.getcwd()
     output_file_zones = "zones"
-    output_path_zones_raw = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
+    output_path_zones_json = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
+    output_path_zones_raw = str(current_path + "/json_out/" + output_file_zones + "_raw.txt")
     
-    with open(output_path_zones_raw,"w") as file:
+    with open(output_path_zones_json,"w") as file:
         json.dump(rooms_json,file,indent=2)
-    print("Created file: " + output_path_zones_raw)
+    print("Created file: " + output_path_zones_json)
 
+    with open(output_path_zones_raw,"w") as file:
+        json.dump(rooms_raw,file,indent=2)
+    print("Created file: " + output_path_zones_raw)
+    
+    # getting list of keys
+    # rooms_json[0]['coordinator'].keys()
+    # dict_keys(['state', 'uuid', 'coordinator', 'roomName', 'groupState'])
+
+    sonosZones = {}
+    val_rooms=[]
+    for n,val in enumerate(rooms_json):
+        val_roomname = rooms_json[n]['coordinator']['roomName']
+        val_rooms.append(val_roomname)
+        sonosZones.update({n: {}})
+        val_uuid = rooms_json[n]['coordinator']['uuid']
+        sonosZones[n].update({"roomName": val_roomname})
+        sonosZones[n].update({"uuid": val_uuid})
+    print("\nList of Zones: ", val_rooms,"\n")
+    print("Dict of Zones: ", sonosZones, "\n")
 
 # Removes extra junk from titles, e.g:
 #   (Original Motion Picture Soundtrack)
