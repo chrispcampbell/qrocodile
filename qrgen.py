@@ -52,11 +52,43 @@ else:
     # No Spotify
     sp = None
 
-def perform_request(url):
+def perform_request(url,type):
     print(url)
-    response = requests.get(url) # equivalent to urllib2.urlopen(url)
-    result = response.text # equivalent to urllib2.read()
+    response = requests.get(url)
+    if type == "txt":
+    	result = response.text
+    elif type == "json":
+    	result = response.json()
+    else:
+    	result = response.text
     return result
+
+def get_rooms():
+    rooms_json=perform_request(base_url + '/zones','json')
+    
+    current_path = os.getcwd()
+    output_file_zones = "zones"
+    output_path_zones = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
+    
+    with open(output_path_zones,"w") as file:
+        json.dump(rooms_json,file,indent=2)
+    print("Created file: " + output_path_zones)
+    
+    # getting list of keys
+    # rooms_json[0]['coordinator'].keys()
+    # dict_keys(['state', 'uuid', 'coordinator', 'roomName', 'groupState'])
+
+    sonosZones = {}
+    val_rooms=[]
+    for n,val in enumerate(rooms_json):
+        val_roomname = rooms_json[n]['coordinator']['roomName']
+        val_rooms.append(val_roomname)
+        sonosZones.update({n: {}})
+        val_uuid = rooms_json[n]['coordinator']['uuid']
+        sonosZones[n].update({"roomName": val_roomname})
+        sonosZones[n].update({"uuid": val_uuid})
+    print("\nList of Zones: ", val_rooms,"\n")
+    print("Dict of Zones: ", sonosZones, "\n")
 
 
 def list_library_tracks(): #not used/doesn't work
