@@ -1,4 +1,4 @@
-out
+#out
 .cache*
 .last-device
 .DS_Store
