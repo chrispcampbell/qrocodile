@@ -29,35 +29,27 @@ if args.spotify_username:
 else:
     sp = None
 
-def perform_request(url):
+def perform_request(url,type):
     print(url)
-    response = requests.get(url) 
-    result = response.text 
-    return result
-
-def perform_request_json(url):
-    print(url)
-    response = requests.get(url) 
-    result = response.json() 
+    response = requests.get(url)
+    if type == "txt":
+    	result = response.text
+    elif type == "json":
+    	result = response.json()
+    else:
+    	result = response.text
     return result
 
 def get_rooms():
-    rooms_raw = perform_request(base_url + '/zones')
-    rooms_raw = json.loads(rooms_raw)
-    rooms_json=perform_request_json(base_url + '/zones')
+    rooms_json=perform_request(base_url + '/zones','json')
     
     current_path = os.getcwd()
     output_file_zones = "zones"
-    output_path_zones_json = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
-    output_path_zones_raw = str(current_path + "/json_out/" + output_file_zones + "_raw.txt")
+    output_path_zones = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
     
-    with open(output_path_zones_json,"w") as file:
+    with open(output_path_zones,"w") as file:
         json.dump(rooms_json,file,indent=2)
-    print("Created file: " + output_path_zones_json)
-
-    with open(output_path_zones_raw,"w") as file:
-        json.dump(rooms_raw,file,indent=2)
-    print("Created file: " + output_path_zones_raw)
+    print("Created file: " + output_path_zones)
     
     # getting list of keys
     # rooms_json[0]['coordinator'].keys()
