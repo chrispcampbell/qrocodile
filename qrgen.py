@@ -35,6 +35,7 @@ arg_parser.add_argument('--generate-images', action='store_true', help='generate
 arg_parser.add_argument('--list-library', action='store_true', help='list all available library tracks')
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
+arg_parser.add_argument('--zones', help='generate cards for all available Sonos Zones')
 args = arg_parser.parse_args()
 print(args)
 
@@ -63,33 +64,84 @@ def perform_request(url,type):
     	result = response.text
     return result
 
-def get_rooms():
+def get_zones():
     rooms_json=perform_request(base_url + '/zones','json')
     
     current_path = os.getcwd()
     output_file_zones = "zones"
     output_path_zones = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
     
-    with open(output_path_zones,"w") as file:
-        json.dump(rooms_json,file,indent=2)
-    print("Created file: " + output_path_zones)
+    # generate output file, mainly to parse the output
+    #with open(output_path_zones,"w") as file:
+    #    json.dump(rooms_json,file,indent=2)
+    #print("Created file: " + output_path_zones)
     
     # getting list of keys
     # rooms_json[0]['coordinator'].keys()
     # dict_keys(['state', 'uuid', 'coordinator', 'roomName', 'groupState'])
 
-    sonosZones = {}
-    val_rooms=[]
+    # create a list with all available rooms
+    sonoszonesavail=[] #list
+    sonoszonesavail_dict={} #dict
+    # we need to populate the dict with
+    ## room name
+    ## art url
+    sonosarturl = 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_volume_up_black_48dp.png'
+    
     for n,val in enumerate(rooms_json):
-        val_roomname = rooms_json[n]['coordinator']['roomName']
-        val_rooms.append(val_roomname)
-        sonosZones.update({n: {}})
-        val_uuid = rooms_json[n]['coordinator']['uuid']
-        sonosZones[n].update({"roomName": val_roomname})
-        sonosZones[n].update({"uuid": val_uuid})
-    print("\nList of Zones: ", val_rooms,"\n")
-    print("Dict of Zones: ", sonosZones, "\n")
+        sonoszonesavail_dict.update({n: ()}) # creating a tuple
+        #val_roomname = rooms_json[n]['coordinator']['roomName']
+        #sonoszonesavail_dict[n].update(val_roomname) # can't use update with a tuple
+        #sonoszonesavail.append(val_roomname)
+        sonoszonesavail.append(rooms_json[n]['coordinator']['roomName'])
+    print("\nList of Zones: ", sonoszonesavail,"\n")
+    
+    
+    
+    for n in sonoszonesavail:
+        qrout = 'out/'+n+'_qr.png'
+        print(qrout)
+        artout = 'out/'+n+'_art.jpg'
+        print(artout)
+        qrimg = n+'_qr.png'
+        print(qrimg)
+        artimg = n+'_art.jpg'
+        print(artimg)
+        qr = pyqrcode.create(n)
+        qr.png(qrout, scale=6)
+        qr.show()
+        print(subprocess.check_output(['curl', sonosarturl, '-o', artout]))
+        # generate html
+        html = ''
+        html += '<html>\n'
+        html += '<head>\n'
+        html += ' <link rel="stylesheet" href="cards.css">\n'
+        html += '</head>\n'
+        html += '<body>\n'
 
+        html += '<div class="singlecard">\n'
+        html = ''
+        # the following is not working for Names with a Space in it
+        html += '  <img src='+artimg+' class="art"/>\n'#.format(artout)
+        html += '  <img src='+qrimg+' class="qrcode"/>\n'#.format(qrout)
+        html += '  <div class="labels">\n'
+        html += '    <p class="song">'+n+'</p>\n'
+        html += '  </div>\n'
+
+        html += '</body>\n'
+        html += '</html>\n'
+
+        html_filename = 'out/'+n+'.html'
+        with open(html_filename, 'w') as f:
+            f.write(html)
+
+
+    ## generate the card HTML
+    #generate_individual_card_image(index, none, none, none)
+    
+    # def generate_cards():
+    #(song, album, artist) = process_command(line, index)
+    
 
 def list_library_tracks(): #not used/doesn't work
     result_json = perform_request(base_url + '/musicsearch/library/listall')
@@ -113,6 +165,7 @@ def strip_title_junk(title):
 
 def process_command(uri, index):
     (cmdname, arturl) = commands[uri]
+    #print out current def
     print('def process_command(uri, index):')
 
     # Determine the output image file names
@@ -129,7 +182,7 @@ def process_command(uri, index):
     print(subprocess.check_output(['curl', arturl, '-o', artout]))
 
     return (cmdname, None, None)
-    
+        
     
 def process_spotify_track(uri, index):
     print('def process_spotify_track(uri, index):')
@@ -248,7 +301,6 @@ def process_library_track(uri, index):
 # Return the HTML content for a single card.
 def card_content_html(index, artist, album, song):
     print('def card_content_html(index, artist, album, song):')
-    # print(str(song) + "is of type " + str(type(song))) # troubleshooting
     qrimg = '{0}qr.png'.format(index)
     artimg = '{0}art.jpg'.format(index)
 
@@ -268,6 +320,7 @@ def card_content_html(index, artist, album, song):
 # Generate a PNG version of an individual card (with no dashed lines).
 # DISABLED
 def generate_individual_card_image(index, artist, album, song):
+    # print out def name for troubleshooting
     print('def generate_individual_card_image(index, artist, album, song):')
     # First generate an HTML file containing the individual card
     html = ''
@@ -307,8 +360,6 @@ def generate_cards():
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    
-
     # Read the file containing the list of commands and songs to generate
     with open(args.input) as f:
         lines = f.readlines()
@@ -323,12 +374,12 @@ def generate_cards():
 
     # Begin the HTML template
     html = '''
-<html>
-<head>
-  <link rel="stylesheet" href="cards.css">
-</head>
-<body>
-'''
+        <html>
+        <head>
+        <link rel="stylesheet" href="cards.css">
+        </head>
+        <body>
+        '''
 
     for line in lines:
         # Trim newline
@@ -387,3 +438,5 @@ if args.input:
     generate_cards()
 elif args.list_library:
     list_library_tracks()
+elif args.zones:
+    get_zones()
