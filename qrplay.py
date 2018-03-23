@@ -42,7 +42,12 @@ arg_parser.add_argument('--spotify-username', help='the username used to set up 
 args = arg_parser.parse_args()
 print(args)
 
+# setting base_url used to access sonos-http-api
 base_url = 'http://' + args.hostname + ':5005'
+
+# setting output of stdout
+import sys
+sys.stdout = open('qrplay.log', 'w')
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
