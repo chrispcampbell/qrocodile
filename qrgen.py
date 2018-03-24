@@ -86,9 +86,6 @@ def get_zones():
     
     for n,val in enumerate(rooms_json):
         sonoszonesavail_dict.update({n: ()}) # creating a tuple
-        #val_roomname = rooms_json[n]['coordinator']['roomName']
-        #sonoszonesavail_dict[n].update(val_roomname) # can't use update with a tuple
-        #sonoszonesavail.append(val_roomname)
         sonoszonesavail.append(rooms_json[n]['coordinator']['roomName'])
     print("\nList of Zones: ", sonoszonesavail,"\n")
     
@@ -113,14 +110,15 @@ def get_zones():
         qr = pyqrcode.create("changezone:"+n)
         qr.png(qrout, scale=6)
         qr.show()
-        print(subprocess.check_output(['curl', sonosarturl, '-o', artout]))
+        # the sonos logo will be one we keep locally or downloaded from github once
+        #print(subprocess.check_output(['curl', sonosarturl, '-o', artout]))
         # generate html
         html += '<div class="card">\n'
         #html += '  <img src="'+artimg+'" class="art"/>\n'.format(artout)
         html += '  <img src="sonos_360.png" class="art"/>\n'.format(artout)
         html += '  <img src="'+qrimg+'" class="qrcode"/>\n'.format(qrout)
         html += '  <div class="labels">\n'
-        html += '    <p class="song">'+n+'</p>\n'#.format(song)
+        html += '    <p class="zone">'+n+'</p>\n'#.format(song)
         html += '  </div>\n'
         html += '</div>\n'
 
