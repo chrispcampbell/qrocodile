@@ -178,6 +178,10 @@ def handle_command(qrcode):
     elif qrcode == 'cmd:whatsong':
         perform_room_request('saysong')
         phrase = None
+    elif qrcode.startswith('changezone:'):
+        newroom = qrcode.split(":")[1]
+        switch_to_room(newroom)
+        phrase = 'I\'m switching to the ' + newroom
     elif qrcode == 'cmd:whatnext':
         perform_room_request('saynext')
         phrase = None

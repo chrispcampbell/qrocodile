@@ -12,6 +12,10 @@ import sys
 import requests  # replaces urllib & urllib2
 import pyqrcode  # https://pypi.python.org/pypi/PyQRCode replaces system qrencode
 
+# requires
+# 1. curl
+
+
 # Build a map of the known commands
 # TODO: Might be better to specify these in the input file to allow for more customization
 # (instead of hardcoding names/images here)
@@ -35,7 +39,7 @@ arg_parser.add_argument('--generate-images', action='store_true', help='generate
 arg_parser.add_argument('--list-library', action='store_true', help='list all available library tracks')
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
-arg_parser.add_argument('--zones', help='generate cards for all available Sonos Zones')
+arg_parser.add_argument('--zones', action='store_true', help='generate cards for all available Sonos Zones')
 args = arg_parser.parse_args()
 print(args)
 
@@ -70,16 +74,7 @@ def get_zones():
     current_path = os.getcwd()
     output_file_zones = "zones"
     output_path_zones = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
-    
-    # generate output file, mainly to parse the output
-    #with open(output_path_zones,"w") as file:
-    #    json.dump(rooms_json,file,indent=2)
-    #print("Created file: " + output_path_zones)
-    
-    # getting list of keys
-    # rooms_json[0]['coordinator'].keys()
-    # dict_keys(['state', 'uuid', 'coordinator', 'roomName', 'groupState'])
-
+        
     # create a list with all available rooms
     sonoszonesavail=[] #list
     sonoszonesavail_dict={} #dict
@@ -87,6 +82,7 @@ def get_zones():
     ## room name
     ## art url
     sonosarturl = 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_volume_up_black_48dp.png'
+    sonosarturl = 'https://d21buns5ku92am.cloudfront.net/61071/images/181023-sonos-logo-black-b45ff7-original-1443493203.png'
     
     for n,val in enumerate(rooms_json):
         sonoszonesavail_dict.update({n: ()}) # creating a tuple
@@ -96,52 +92,44 @@ def get_zones():
         sonoszonesavail.append(rooms_json[n]['coordinator']['roomName'])
     print("\nList of Zones: ", sonoszonesavail,"\n")
     
-    
-    
+    # copy cards.css to /out folder
+    shutil.copyfile('cards.css', 'out/cards.css')
+    shutil.copyfile('sonos_360.png', 'out/sonos_360.png')
+
+    # Begin the HTML template
+    html = '''
+        <html>
+        <head>
+        <link rel="stylesheet" href="cards.css">
+        </head>
+        <body>
+        '''
+
     for n in sonoszonesavail:
         qrout = 'out/'+n+'_qr.png'
-        print(qrout)
         artout = 'out/'+n+'_art.jpg'
-        print(artout)
         qrimg = n+'_qr.png'
-        print(qrimg)
         artimg = n+'_art.jpg'
-        print(artimg)
-        qr = pyqrcode.create(n)
+        qr = pyqrcode.create("changezone:"+n)
         qr.png(qrout, scale=6)
         qr.show()
         print(subprocess.check_output(['curl', sonosarturl, '-o', artout]))
         # generate html
-        html = ''
-        html += '<html>\n'
-        html += '<head>\n'
-        html += ' <link rel="stylesheet" href="cards.css">\n'
-        html += '</head>\n'
-        html += '<body>\n'
-
-        html += '<div class="singlecard">\n'
-        html = ''
-        # the following is not working for Names with a Space in it
-        html += '  <img src='+artimg+' class="art"/>\n'#.format(artout)
-        html += '  <img src='+qrimg+' class="qrcode"/>\n'#.format(qrout)
+        html += '<div class="card">\n'
+        #html += '  <img src="'+artimg+'" class="art"/>\n'.format(artout)
+        html += '  <img src="sonos_360.png" class="art"/>\n'.format(artout)
+        html += '  <img src="'+qrimg+'" class="qrcode"/>\n'.format(qrout)
         html += '  <div class="labels">\n'
-        html += '    <p class="song">'+n+'</p>\n'
+        html += '    <p class="song">'+n+'</p>\n'#.format(song)
         html += '  </div>\n'
+        html += '</div>\n'
 
-        html += '</body>\n'
-        html += '</html>\n'
+    html += '</body>\n'
+    html += '</html>\n'
 
-        html_filename = 'out/'+n+'.html'
-        with open(html_filename, 'w') as f:
-            f.write(html)
+    with open('out/zones.html', 'w') as f:
+        f.write(html)
 
-
-    ## generate the card HTML
-    #generate_individual_card_image(index, none, none, none)
-    
-    # def generate_cards():
-    #(song, album, artist) = process_command(line, index)
-    
 
 def list_library_tracks(): #not used/doesn't work
     result_json = perform_request(base_url + '/musicsearch/library/listall')
@@ -420,6 +408,9 @@ def generate_cards():
             # Also generate an individual PNG for the card
             generate_individual_card_image(index, artist, album, song)
 
+        if args.zones:
+            generate_individual_card_image(index, artist, album, song)
+
         if index % 2 == 1:
             html += '<br style="clear: both;"/>\n'
 
@@ -428,7 +419,7 @@ def generate_cards():
     html += '</body>\n'
     html += '</html>\n'
 
-    print(html)
+    #print(html)
 
     with open('out/index.html', 'w') as f:
         f.write(html)
