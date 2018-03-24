@@ -12,6 +12,10 @@ import sys
 import requests  # replaces urllib & urllib2
 import pyqrcode  # https://pypi.python.org/pypi/PyQRCode replaces system qrencode
 
+# requires
+# 1. curl
+
+
 # Build a map of the known commands
 # TODO: Might be better to specify these in the input file to allow for more customization
 # (instead of hardcoding names/images here)
@@ -35,6 +39,7 @@ arg_parser.add_argument('--generate-images', action='store_true', help='generate
 arg_parser.add_argument('--list-library', action='store_true', help='list all available library tracks')
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
+arg_parser.add_argument('--zones', action='store_true', help='generate cards for all available Sonos Zones')
 args = arg_parser.parse_args()
 print(args)
 
@@ -52,11 +57,78 @@ else:
     # No Spotify
     sp = None
 
-def perform_request(url):
+def perform_request(url,type):
     print(url)
-    response = requests.get(url) # equivalent to urllib2.urlopen(url)
-    result = response.text # equivalent to urllib2.read()
+    response = requests.get(url)
+    if type == "txt":
+    	result = response.text
+    elif type == "json":
+    	result = response.json()
+    else:
+    	result = response.text
     return result
+
+def get_zones():
+    rooms_json=perform_request(base_url + '/zones','json')
+    
+    current_path = os.getcwd()
+    output_file_zones = "zones"
+    output_path_zones = str(current_path + "/json_out/" + output_file_zones + "_raw.json")
+        
+    # create a list with all available rooms
+    sonoszonesavail=[] #list
+    sonoszonesavail_dict={} #dict
+    # we need to populate the dict with
+    ## room name
+    ## art url
+    sonosarturl = 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_volume_up_black_48dp.png'
+    sonosarturl = 'https://d21buns5ku92am.cloudfront.net/61071/images/181023-sonos-logo-black-b45ff7-original-1443493203.png'
+    
+    for n,val in enumerate(rooms_json):
+        sonoszonesavail_dict.update({n: ()}) # creating a tuple
+        #val_roomname = rooms_json[n]['coordinator']['roomName']
+        #sonoszonesavail_dict[n].update(val_roomname) # can't use update with a tuple
+        #sonoszonesavail.append(val_roomname)
+        sonoszonesavail.append(rooms_json[n]['coordinator']['roomName'])
+    print("\nList of Zones: ", sonoszonesavail,"\n")
+    
+    # copy cards.css to /out folder
+    shutil.copyfile('cards.css', 'out/cards.css')
+    shutil.copyfile('sonos_360.png', 'out/sonos_360.png')
+
+    # Begin the HTML template
+    html = '''
+        <html>
+        <head>
+        <link rel="stylesheet" href="cards.css">
+        </head>
+        <body>
+        '''
+
+    for n in sonoszonesavail:
+        qrout = 'out/'+n+'_qr.png'
+        artout = 'out/'+n+'_art.jpg'
+        qrimg = n+'_qr.png'
+        artimg = n+'_art.jpg'
+        qr = pyqrcode.create("changezone:"+n)
+        qr.png(qrout, scale=6)
+        qr.show()
+        print(subprocess.check_output(['curl', sonosarturl, '-o', artout]))
+        # generate html
+        html += '<div class="card">\n'
+        #html += '  <img src="'+artimg+'" class="art"/>\n'.format(artout)
+        html += '  <img src="sonos_360.png" class="art"/>\n'.format(artout)
+        html += '  <img src="'+qrimg+'" class="qrcode"/>\n'.format(qrout)
+        html += '  <div class="labels">\n'
+        html += '    <p class="song">'+n+'</p>\n'#.format(song)
+        html += '  </div>\n'
+        html += '</div>\n'
+
+    html += '</body>\n'
+    html += '</html>\n'
+
+    with open('out/zones.html', 'w') as f:
+        f.write(html)
 
 
 def list_library_tracks(): #not used/doesn't work
@@ -81,6 +153,7 @@ def strip_title_junk(title):
 
 def process_command(uri, index):
     (cmdname, arturl) = commands[uri]
+    #print out current def
     print('def process_command(uri, index):')
 
     # Determine the output image file names
@@ -97,7 +170,7 @@ def process_command(uri, index):
     print(subprocess.check_output(['curl', arturl, '-o', artout]))
 
     return (cmdname, None, None)
-    
+        
     
 def process_spotify_track(uri, index):
     print('def process_spotify_track(uri, index):')
@@ -216,7 +289,6 @@ def process_library_track(uri, index):
 # Return the HTML content for a single card.
 def card_content_html(index, artist, album, song):
     print('def card_content_html(index, artist, album, song):')
-    # print(str(song) + "is of type " + str(type(song))) # troubleshooting
     qrimg = '{0}qr.png'.format(index)
     artimg = '{0}art.jpg'.format(index)
 
@@ -236,6 +308,7 @@ def card_content_html(index, artist, album, song):
 # Generate a PNG version of an individual card (with no dashed lines).
 # DISABLED
 def generate_individual_card_image(index, artist, album, song):
+    # print out def name for troubleshooting
     print('def generate_individual_card_image(index, artist, album, song):')
     # First generate an HTML file containing the individual card
     html = ''
@@ -275,8 +348,6 @@ def generate_cards():
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    
-
     # Read the file containing the list of commands and songs to generate
     with open(args.input) as f:
         lines = f.readlines()
@@ -291,12 +362,12 @@ def generate_cards():
 
     # Begin the HTML template
     html = '''
-<html>
-<head>
-  <link rel="stylesheet" href="cards.css">
-</head>
-<body>
-'''
+        <html>
+        <head>
+        <link rel="stylesheet" href="cards.css">
+        </head>
+        <body>
+        '''
 
     for line in lines:
         # Trim newline
@@ -337,6 +408,9 @@ def generate_cards():
             # Also generate an individual PNG for the card
             generate_individual_card_image(index, artist, album, song)
 
+        if args.zones:
+            generate_individual_card_image(index, artist, album, song)
+
         if index % 2 == 1:
             html += '<br style="clear: both;"/>\n'
 
@@ -345,7 +419,7 @@ def generate_cards():
     html += '</body>\n'
     html += '</html>\n'
 
-    print(html)
+    #print(html)
 
     with open('out/index.html', 'w') as f:
         f.write(html)
@@ -355,3 +429,5 @@ if args.input:
     generate_cards()
 elif args.list_library:
     list_library_tracks()
+elif args.zones:
+    get_zones()

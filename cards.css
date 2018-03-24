@@ -21,6 +21,7 @@ body {
   height: 180px;
   object-fit: contain;
   object-position: center top;
+  vertical-align: middle;
 }
 
 .qrcode {

@@ -42,7 +42,12 @@ arg_parser.add_argument('--spotify-username', help='the username used to set up 
 args = arg_parser.parse_args()
 print(args)
 
+# setting base_url used to access sonos-http-api
 base_url = 'http://' + args.hostname + ':5005'
+
+# setting output of stdout
+import sys
+sys.stdout = open('qrplay.log', 'w')
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
@@ -173,6 +178,10 @@ def handle_command(qrcode):
     elif qrcode == 'cmd:whatsong':
         perform_room_request('saysong')
         phrase = None
+    elif qrcode.startswith('changezone:'):
+        newroom = qrcode.split(":")[1]
+        switch_to_room(newroom)
+        phrase = 'I\'m switching to the ' + newroom
     elif qrcode == 'cmd:whatnext':
         perform_room_request('saynext')
         phrase = None
