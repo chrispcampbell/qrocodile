@@ -241,6 +241,43 @@ def process_spotify_album(uri, index):
     #return (album.encode('utf-8'), artist.encode('utf-8'))
     return (album_name, album_blank, artist_name) # removed encoding into utf-8 as it turns str into bytes
 
+def process_spotify_playlist(uri, index):
+    print('def process_spotify_playlist(uri, index):')
+    if not sp:
+        raise ValueError('Must configure Spotify API access first using `--spotify-username`')
+
+    playlist = sp.user_playlist(uri)
+
+    print(playlist['name'])
+    # print('track    : ' + track['name'])
+    # print 'artist   : ' + track['artists'][0]['name']
+    # print 'album    : ' + track['album']['name']
+    # print 'cover art: ' + track['album']['images'][0]['url']
+
+    # keeping the strip_title_junk as optional
+    #album_name = strip_title_junk(album['name'])
+    #artist_name = strip_title_junk(album['artists'][0]['name'])
+    playlist_name = playlist["name"]
+    user_name = playlist["artists"][0]["name"]
+    arturl = playlist['images'][0]['url']
+    
+    # Determine the output image file names
+    qrout = 'out/{0}qr.png'.format(index)
+    artout = 'out/{0}art.jpg'.format(index)
+    
+    # Create a QR code from the album URI
+    ##print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
+    qr1 = pyqrcode.create(uri)
+    qr1.png(qrout, scale=6)
+    qr1.show()
+
+    # Fetch the artwork and save to the output directory
+    print(subprocess.check_output(['curl', arturl, '-o', artout]))
+    
+    playlist_blank = ""
+    #return (album.encode('utf-8'), artist.encode('utf-8'))
+    return (playlist_name, playlist_blank, playlist_name) # removed encoding into utf-8 as it turns str into bytes
+
 
 def process_library_track(uri, index):
     print('def process_library_track(uri, index):')
@@ -383,7 +420,7 @@ def generate_cards():
             (song, album, artist) = process_spotify_album(line, index)
         elif line.startswith('spotify:track:'):
             (song, album, artist) = process_spotify_track(line, index)
-        elif line.startswith('spotify:playlist:'):
+        elif line.startswith('spotify:user:' + * + ':playlist:'):
             (song, album, artist) = process_spotify_playlist(line, index)
         elif line.startswith('lib:'):
             (song, album, artist) = process_library_track(line, index)

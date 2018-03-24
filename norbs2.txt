@@ -1,0 +1,6 @@
+spotify:album:0Av6IM3nN41CuQ6E3VWRsI   # herbst
+spotify:album:7oe96EpBKDY6iAKkjHXmCc  # fruehling
+spotify:user:dernorbs:playlist:4ZVegZjqOHdLvaSYFDo4c7    # ellie songs
+spotify:user:freemanfamilybanff:playlist:30CmRQYuirciDRK7cerLsm  # thomas the tank engine
+spotify:album:2FcJpDHg4WaTcmqtPzJeuF # the snowman
+

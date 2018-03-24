@@ -256,6 +256,40 @@ def handle_spotify_album(uri):
             action = "queue"
             perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
 
+def handle_spotify_playlist(uri):
+    print('PLAYING PLAYLIST FROM SPOTIFY: ' + uri)
+    
+    playlist_raw = sp.user_playlist(uri)
+    album_name = playlist_raw["name"]
+    artist_name = playlist_raw["artists"][0]["name"]
+
+    # crating and updating the track list   
+    playlist_tracks_raw = sp.user_playlist_tracks(uri,limit=50,offset=0)
+    playlist_tracks = {}
+
+    # clear the sonos queue
+    action = 'clearqueue'
+    perform_room_request('{0}'.format(action))
+        
+    for track in playlist_tracks_raw['items']:
+        track_number = track["track_number"]
+        track_name = track["name"]
+        track_uri = track["uri"]
+        playlist_tracks.update({track_number: {}})
+        playlist_tracks[track_number].update({"uri" : track_uri})
+        playlist_tracks[track_number].update({"name" : track_name})
+        print(track_number)
+        if track_number == int("1"):
+            # play track 1 immediately
+            action = 'now'
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+            #action = 'play'
+            #perform_room_request('{0}'.format(action))
+        else:
+            # add all remaining tracks to queue
+            action = "queue"
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+
 
 def handle_qrcode(qrcode):
     global last_qrcode
@@ -276,6 +310,9 @@ def handle_qrcode(qrcode):
     elif qrcode.startswith('spotify:artist:'):
         # NOT READY
         handle_spotify_artist(qrcode)
+    elif qrcode.startswith('spotify:user:' + * + ':playlist:'):
+        # WIP
+        handle_spotify_playlist(qrcode)
     elif qrcode.startswith('spotify:'):
         handle_spotify_item(qrcode)
     else:
