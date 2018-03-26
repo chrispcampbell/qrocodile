@@ -313,8 +313,8 @@ def handle_qrcode(qrcode):
     elif qrcode.startswith('spotify:artist:'):
         # NOT READY
         handle_spotify_artist(qrcode)
-    elif qrcode.startswith('spotify:user:' + * + ':playlist:'):
-        # WIP
+    elif qrcode.startswith('spotify:user:'):
+        if (":playlist:") in qrcode:
         handle_spotify_playlist(qrcode)
     elif qrcode.startswith('spotify:'):
         handle_spotify_item(qrcode)
