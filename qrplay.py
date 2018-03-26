@@ -107,7 +107,7 @@ def perform_room_request(path):
 def switch_to_room(room):
     global current_device
 
-    perform_global_request('pauseall')
+    #perform_global_request('pauseall')
     current_device = room
     with open(".last-device", "w") as device_file:
         device_file.write(current_device)
@@ -184,6 +184,7 @@ def handle_command(qrcode):
         phrase = None
     elif qrcode.startswith('changezone:'):
         newroom = qrcode.split(":")[1]
+        print('Switching to '+ newroom)
         switch_to_room(newroom)
         phrase = 'I\'m switching to the ' + newroom
     elif qrcode == 'cmd:whatnext':
@@ -312,6 +313,8 @@ def handle_qrcode(qrcode):
             handle_spotify_playlist(qrcode)
     elif qrcode.startswith('spotify:'):
         handle_spotify_item(qrcode)
+    elif qrcode.startswith('changezone:'):
+        handle_command(qrcode)
     else:
         handle_library_item(qrcode)
 
