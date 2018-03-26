@@ -125,13 +125,17 @@ def blink_led():
     duration = 0.15
 
     def led_off():
-        subprocess.call("echo 0 > /sys/class/leds/led0/brightness", shell=True)
+	#subprocess.call("echo 0 > /sys/class/leds/led0/brightness", shell=True)
+        subprocess.call("echo 1 | sudo tee /sys/class/leds/led0/brightness", shell=True)
 
     def led_on():
-        subprocess.call("echo 1 > /sys/class/leds/led0/brightness", shell=True)
+        #subprocess.call("echo 1 > /sys/class/leds/led0/brightness", shell=True)
+        subprocess.call("echo 0 | sudo tee /sys/class/leds/led0/brightness", shell=True)
 
     # Technically we only need to do this once when the script launches
-    subprocess.call("echo none > /sys/class/leds/led0/trigger", shell=True)
+    #subprocess.call("echo none > /sys/class/leds/led0/trigger", shell=True)
+    subprocess.call("echo none | tee /sys/class/leds/led0/trigger", shell=True)
+
 
     led_on()
     sleep(duration)
@@ -315,7 +319,7 @@ def handle_qrcode(qrcode):
         handle_spotify_artist(qrcode)
     elif qrcode.startswith('spotify:user:'):
         if (":playlist:") in qrcode:
-        handle_spotify_playlist(qrcode)
+            handle_spotify_playlist(qrcode)
     elif qrcode.startswith('spotify:'):
         handle_spotify_item(qrcode)
     else:
