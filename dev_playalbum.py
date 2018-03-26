@@ -26,6 +26,7 @@ else:
 if args.spotify_username:
     scope = 'user-library-read'
     token = util.prompt_for_user_token(args.spotify_username, scope)
+    #token = util.prompt_for_user_token('dernorbs', scope)
     if token:
         sp = spotipy.Spotify(auth=token)
     else:
@@ -85,6 +86,9 @@ def dump_json():
             handle_spotify_artist(line, index)
         elif line.startswith('spotify:track:'):
             handle_spotify_track(line, index)
+        elif line.startswith('spotify:user:'):
+            if (":playlist:") in line:
+                handle_spotify_playlist(line)
         else:
             print('Failed to handle URI: ' + line)
             exit(1)
@@ -109,6 +113,40 @@ def handle_spotify_album(uri):
         album_tracks.update({track_number: {}})
         album_tracks[track_number].update({"uri" : track_uri})
         album_tracks[track_number].update({"name" : track_name})
+        if track_number == int("1"):
+            # play track 1 immediately
+            action = 'now'
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+            #action = 'play'
+            #perform_room_request('{0}'.format(action))
+        else:
+            # add all remaining tracks to queue
+            action = "queue"
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+
+def handle_spotify_playlist(uri):    
+
+    sp_user = uri.split(":")[2]
+    playlist = sp.user_playlist(sp_user,uri)
+    playlist_name = playlist["name"]
+    playlist_owner = playlist["owner"]["id"]
+
+    # crating and updating the track list   
+    playlist_tracks_raw = sp.user_playlist_tracks(sp_user,uri,limit=50,offset=0)
+    playlist_tracks = {}
+
+    # clear the sonos queue
+    action = 'clearqueue'
+    perform_room_request('{0}'.format(action))
+        
+    for track in playlist_tracks_raw['items']:
+        track_number = track['track']['track_number']
+        track_name = track['track']["name"]
+        track_uri = track['track']["uri"]
+        playlist_tracks.update({track_number: {}})
+        playlist_tracks[track_number].update({"uri" : track_uri})
+        playlist_tracks[track_number].update({"name" : track_name})
+        print(track_number)
         if track_number == int("1"):
             # play track 1 immediately
             action = 'now'

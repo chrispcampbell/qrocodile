@@ -253,35 +253,28 @@ def handle_spotify_album(uri):
             # play track 1 immediately
             action = 'now'
             perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
-            #action = 'play'
-            #perform_room_request('{0}'.format(action))
         else:
             # add all remaining tracks to queue
             action = "queue"
             perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
 
 def handle_spotify_playlist(uri):
-    print('PLAYING PLAYLIST FROM SPOTIFY: ' + uri)
-    uri = 'spotify:user:dernorbs:playlist:4ZVegZjqOHdLvaSYFDo4c7'
     sp_user = uri.split(":")[2]
     playlist_raw = sp.user_playlist(sp_user,uri)
     playlist_name = playlist_raw["name"]
 
-    # images
-    # playlist_raw['images']
-
-    # creating and updating the track list   
-    playlist_tracks_raw = sp.user_playlist_tracks(uri,limit=50,offset=0)
-    playlist_tracks = {}
-
     # clear the sonos queue
     action = 'clearqueue'
     perform_room_request('{0}'.format(action))
+
+    # creating and updating the track list   
+    playlist_tracks_raw = sp.user_playlist_tracks(sp_user,uri,limit=50,offset=0)
+    playlist_tracks = {}
         
-    for track in playlist_raw['tracks']:
-        track_number = track["track_number"]
-        track_name = track["name"]
-        track_uri = track["uri"]
+    for track in playlist_tracks_raw['items']:
+        track_number = track['track']['track_number']
+        track_name = track['track']["name"]
+        track_uri = track['track']["uri"]
         playlist_tracks.update({track_number: {}})
         playlist_tracks[track_number].update({"uri" : track_uri})
         playlist_tracks[track_number].update({"name" : track_name})
@@ -290,13 +283,10 @@ def handle_spotify_playlist(uri):
             # play track 1 immediately
             action = 'now'
             perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
-            #action = 'play'
-            #perform_room_request('{0}'.format(action))
         else:
             # add all remaining tracks to queue
             action = "queue"
             perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
-
 
 def handle_qrcode(qrcode):
     global last_qrcode
