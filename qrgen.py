@@ -245,20 +245,15 @@ def process_spotify_playlist(uri, index):
     print('def process_spotify_playlist(uri, index):')
     if not sp:
         raise ValueError('Must configure Spotify API access first using `--spotify-username`')
-
-    playlist = sp.user_playlist(uri)
-
-    print(playlist['name'])
-    # print('track    : ' + track['name'])
-    # print 'artist   : ' + track['artists'][0]['name']
-    # print 'album    : ' + track['album']['name']
-    # print 'cover art: ' + track['album']['images'][0]['url']
+    
+    sp_user = uri.split(":")[2]
+    playlist = sp.user_playlist(sp_user,uri)
+    playlist_name = playlist["name"]
 
     # keeping the strip_title_junk as optional
     #album_name = strip_title_junk(album['name'])
     #artist_name = strip_title_junk(album['artists'][0]['name'])
-    playlist_name = playlist["name"]
-    user_name = playlist["artists"][0]["name"]
+    playlist_owner = playlist["owner"]["id"]
     arturl = playlist['images'][0]['url']
     
     # Determine the output image file names
@@ -276,7 +271,7 @@ def process_spotify_playlist(uri, index):
     
     playlist_blank = ""
     #return (album.encode('utf-8'), artist.encode('utf-8'))
-    return (playlist_name, playlist_blank, playlist_name) # removed encoding into utf-8 as it turns str into bytes
+    return (playlist_name, playlist_owner, playlist_blank) # removed encoding into utf-8 as it turns str into bytes
 
 
 def process_library_track(uri, index):
@@ -420,8 +415,10 @@ def generate_cards():
             (song, album, artist) = process_spotify_album(line, index)
         elif line.startswith('spotify:track:'):
             (song, album, artist) = process_spotify_track(line, index)
-        elif line.startswith('spotify:user:' + * + ':playlist:'):
-            (song, album, artist) = process_spotify_playlist(line, index)
+        #elif line.startswith('spotify:user:',':playlist:'):
+        elif line.startswith('spotify:user:'):
+            if (":playlist:") in line:
+                (song, album, artist) = process_spotify_playlist(line, index)
         elif line.startswith('lib:'):
             (song, album, artist) = process_library_track(line, index)
         else:

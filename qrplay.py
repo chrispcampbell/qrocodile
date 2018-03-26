@@ -258,12 +258,15 @@ def handle_spotify_album(uri):
 
 def handle_spotify_playlist(uri):
     print('PLAYING PLAYLIST FROM SPOTIFY: ' + uri)
-    
-    playlist_raw = sp.user_playlist(uri)
-    album_name = playlist_raw["name"]
-    artist_name = playlist_raw["artists"][0]["name"]
+    uri = 'spotify:user:dernorbs:playlist:4ZVegZjqOHdLvaSYFDo4c7'
+    sp_user = uri.split(":")[2]
+    playlist_raw = sp.user_playlist(sp_user,uri)
+    playlist_name = playlist_raw["name"]
 
-    # crating and updating the track list   
+    # images
+    # playlist_raw['images']
+
+    # creating and updating the track list   
     playlist_tracks_raw = sp.user_playlist_tracks(uri,limit=50,offset=0)
     playlist_tracks = {}
 
@@ -271,7 +274,7 @@ def handle_spotify_playlist(uri):
     action = 'clearqueue'
     perform_room_request('{0}'.format(action))
         
-    for track in playlist_tracks_raw['items']:
+    for track in playlist_raw['tracks']:
         track_number = track["track_number"]
         track_name = track["name"]
         track_uri = track["uri"]
