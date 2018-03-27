@@ -58,7 +58,7 @@ else:
     sp = None
 
 def perform_request(url,type):
-    print(url)
+
     response = requests.get(url)
     if type == "txt":
     	result = response.text
@@ -130,7 +130,7 @@ def get_zones():
 
 
 def list_library_tracks(): #not used/doesn't work
-    result_json = perform_request(base_url + '/musicsearch/library/listall')
+    result_json = perform_request(base_url + '/musicsearch/library/listall','text')
     tracks = json.loads(result_json)['tracks']
     for t in tracks:
         print(t)
@@ -152,7 +152,6 @@ def strip_title_junk(title):
 def process_command(uri, index):
     (cmdname, arturl) = commands[uri]
     #print out current def
-    print('def process_command(uri, index):')
 
     # Determine the output image file names
     qrout = 'out/{0}qr.png'.format(index)
@@ -171,7 +170,6 @@ def process_command(uri, index):
         
     
 def process_spotify_track(uri, index):
-    print('def process_spotify_track(uri, index):')
     if not sp:
         raise ValueError('Must configure Spotify API access first using `--spotify-username`')
 
@@ -205,7 +203,6 @@ def process_spotify_track(uri, index):
     return (song, album, artist) # removed encoding into utf-8 as it turns str into bytes
 
 def process_spotify_album(uri, index):
-    print('def process_spotify_album(uri, index):')
     if not sp:
         raise ValueError('Must configure Spotify API access first using `--spotify-username`')
 
@@ -242,7 +239,6 @@ def process_spotify_album(uri, index):
     return (album_name, album_blank, artist_name) # removed encoding into utf-8 as it turns str into bytes
 
 def process_spotify_playlist(uri, index):
-    print('def process_spotify_playlist(uri, index):')
     if not sp:
         raise ValueError('Must configure Spotify API access first using `--spotify-username`')
     
@@ -275,10 +271,9 @@ def process_spotify_playlist(uri, index):
 
 
 def process_library_track(uri, index):
-    print('def process_library_track(uri, index):')
-    track_json = perform_request(base_url + '/musicsearch/library/metadata/' + uri)
+    track_json = perform_request(base_url + '/musicsearch/library/metadata/' + uri,'txt')
     track = json.loads(track_json)
-    print(track)
+    #print(track)
 
     song = strip_title_junk(track['trackName'])
     artist = strip_title_junk(track['artistName'])
@@ -293,7 +288,7 @@ def process_library_track(uri, index):
     from urlparse import urlparse
     uri_parts = urlparse(track['uri'])
     uri_path = uri_parts.path
-    print(uri_path)
+
     (uri_path, song_part) = os.path.split(uri_path)
     (uri_path, album_part) = os.path.split(uri_path)
     (uri_path, artist_part) = os.path.split(uri_path)
@@ -318,7 +313,6 @@ def process_library_track(uri, index):
 
 # Return the HTML content for a single card.
 def card_content_html(index, artist, album, song):
-    print('def card_content_html(index, artist, album, song):')
     qrimg = '{0}qr.png'.format(index)
     artimg = '{0}art.jpg'.format(index)
 
@@ -338,8 +332,6 @@ def card_content_html(index, artist, album, song):
 # Generate a PNG version of an individual card (with no dashed lines).
 # DISABLED
 def generate_individual_card_image(index, artist, album, song):
-    # print out def name for troubleshooting
-    print('def generate_individual_card_image(index, artist, album, song):')
     # First generate an HTML file containing the individual card
     html = ''
     html += '<html>\n'
@@ -370,7 +362,6 @@ def generate_individual_card_image(index, artist, album, song):
 
 
 def generate_cards():
-    print('def generate_cards():')
     # Create the output directory
     dirname = os.getcwd()
     outdir = os.path.join(dirname, 'out')
@@ -455,7 +446,6 @@ def generate_cards():
 
     with open('out/index.html', 'w') as f:
         f.write(html)
-
 
 if args.input:
     generate_cards()
