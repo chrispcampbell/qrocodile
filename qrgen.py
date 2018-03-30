@@ -133,7 +133,11 @@ def strip_title_junk(title):
 
 
 def process_command(uri, index):  # new function using the outside json file
+<<<<<<< HEAD
     cmdname = commands[uri]['label']
+=======
+    cmdname = commands[uri]['command']
+>>>>>>> 0363634cf2d230560e3e1d7dd0dd4b8fc4d8ad88
     arturl = commands[uri]['image']
 
     # Determine the output image file names

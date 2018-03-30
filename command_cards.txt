@@ -11,10 +11,17 @@
     {"command": "cmd:next", "label": "Skip to Next Song", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_skip_next_black_48dp.png"
     },
     "cmd:whatsong":
+<<<<<<< HEAD
     {"command": "cmd:whatsong", "label": "What's Playing?", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
     },
     "cmd:whatnext":
     {"command": "cmd:whatnext", "label": "What's Next?", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
+=======
+    {"command": "cmd:whatsong", "label": "What\"s Playing?", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
+    },
+    "cmd:whatnext":
+    {"command": "cmd:whatnext", "label": "What\"s Next?", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
+>>>>>>> 0363634cf2d230560e3e1d7dd0dd4b8fc4d8ad88
     },
     "cmd:buildqueue":
     {"command": "cmd:buildqueue", "label": "Build List of Songs", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_playlist_add_black_48dp.png"
