@@ -21,6 +21,7 @@
 # SOFTWARE.
 #
 
+import logging
 import argparse
 import json
 import os
@@ -45,9 +46,14 @@ print(args)
 # setting base_url used to access sonos-http-api
 base_url = 'http://' + args.hostname + ':5005'
 
-# setting output of stdout
-import sys
-sys.stdout = open('qrplay.log', 'w')
+# setting up logfile qrplay.log
+LOG_FORMAT = "%(Levelname)s %(asctime)s - %(message)s"
+logging.basicConfig(filename = "qrplay.log", 
+                    filemode = "w",
+                    level = logging.INFO,
+                    format = LOG_FORMAT)
+logger = logging.getLogger()
+
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
@@ -55,12 +61,14 @@ if args.spotify_username:
     token = util.prompt_for_user_token(args.spotify_username, scope)
     if token:
         sp = spotipy.Spotify(auth=token)
+        logger.INFO("logged into Spotify")
     else:
         raise ValueError('Can\'t get Spotify token for ' + username)
+        logger.INFO('Can\'t get Spotify token for ' + username)
 else:
     # No Spotify
     sp = None
-
+    logger.INFO('Not using a Spotify account)
 
 # Load the most recently used device, if available, otherwise fall back on the `default-device` argument
 try:
@@ -82,16 +90,23 @@ class Mode:
 
 current_mode = Mode.PLAY_SONG_IMMEDIATELY
 
-
-def perform_request(url):
+def perform_request(url,type):
+    # as with qrgen, this function has been expanded
+    # to support two kinds of output: text and json, the latter turned into usable dicts
     print(url)
-    response = requests.get(url) # equivalent to urllib2.urlopen(url)
-    result = response.text # equivalent to urllib2.read()
-    print(result)
+    response = requests.get(url)
+    if type == "txt":
+    	result = response.text
+    elif type == "json":
+    	result = response.json()
+    else:
+    	result = response.text
+    #print(result)
+    return result
 
 
 def perform_global_request(path):
-    perform_request(base_url + '/' + path)
+    perform_request(base_url + '/' + path,None)
 
 
 def perform_room_request(path):
@@ -101,8 +116,9 @@ def perform_room_request(path):
         qdevice=current_device.replace(" ", "%20")
     else:
         qdevice=current_device
-    perform_request(base_url + '/' + qdevice + '/' + path)
-
+    #perform_request(base_url + '/' + qdevice + '/' + path,None)
+    response = perform_request(base_url + '/' + qdevice + '/' + path,'json')
+    return response
 
 def switch_to_room(room):
     global current_device
@@ -145,7 +161,6 @@ def blink_led():
     sleep(duration)
     led_off()
 
-
 def handle_command(qrcode):
     global current_mode
 
@@ -154,6 +169,22 @@ def handle_command(qrcode):
     if qrcode == 'cmd:playpause':
         perform_room_request('playpause')
         phrase = None
+    elif qrcode == 'cmd:shuffle':
+        room_state = perform_room_request('state')
+        if room_state['playMode']['shuffle'] == "True":
+            perform_room_request('shuffle/off')
+            phrase = "Shuffle disabled"
+        else:
+            perform_room_request('shuffle/on')
+            phrase = "Shuffle enabled"
+    elif qrcode == 'cmd:repeat':
+        room_state = perform_room_request('state')
+        if room_state['playMode']['repeat'] == "True":
+            perform_room_request('repeat/off')
+            phrase = "Repeat disabled"
+        else:
+            perform_room_request('repeat/on')
+            phrase = "Repeat All"
     elif qrcode == 'cmd:next':
         perform_room_request('next')
         phrase = None
@@ -308,7 +339,7 @@ def handle_qrcode(qrcode):
     elif qrcode.startswith('spotify:artist:'):
         # NOT READY
         handle_spotify_artist(qrcode)
-    elif qrcode.startswith('spotify:user:'):
+    elif qrcode.startswith('spotify:user:'): # playlist
         if (":playlist:") in qrcode:
             handle_spotify_playlist(qrcode)
     elif qrcode.startswith('spotify:'):
