@@ -2,3 +2,4 @@
 .cache*
 .last-device
 .DS_Store
+*.log
