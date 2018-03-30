@@ -47,11 +47,7 @@ base_url = 'http://' + args.hostname + ':5005'
 
 # setting output of stdout
 import sys
-sys.stdout = open('qrplay_out.log', 'w')
-
-# logging
-import logging
-logging.basicConfig(filename='qrplay.log',level=logging.INFO)
+sys.stdout = open('qrplay.log', 'w')
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
@@ -75,7 +71,6 @@ except:
     current_device = args.default_device
     print('Initial room: ' + current_device)
 
-
 # Keep track of the last-seen code
 last_qrcode = ''
 
@@ -88,22 +83,15 @@ class Mode:
 current_mode = Mode.PLAY_SONG_IMMEDIATELY
 
 
-def perform_request(url,type):
+def perform_request(url):
     print(url)
     response = requests.get(url) # equivalent to urllib2.urlopen(url)
-    #result = response.text # equivalent to urllib2.read()
-    #print(result)
-    if type == "txt":
-    	result = response.text
-    elif type == "json":
-    	result = response.json()
-    else:
-    	result = response.text
-    return result
+    result = response.text # equivalent to urllib2.read()
+    print(result)
 
 
 def perform_global_request(path):
-    perform_request(base_url + '/' + path,None)
+    perform_request(base_url + '/' + path)
 
 
 def perform_room_request(path):
@@ -113,29 +101,21 @@ def perform_room_request(path):
         qdevice=current_device.replace(" ", "%20")
     else:
         qdevice=current_device
-    perform_request(base_url + '/' + qdevice + '/' + path,None)
+    perform_request(base_url + '/' + qdevice + '/' + path)
 
 
 def switch_to_room(room):
     global current_device
 
-    current_device = room
-
     #perform_global_request('pauseall')
-
-    # setting volume to 4 and back to original value
-    announcement_volume = 4
-    current_volume = perform_request(base_url + '/' + room + '/state','json')
-    current_volume = current_volume['volume']
-    perform_request(base_url + '/' + room + '/volume/' + str(announcement_volume),None)
-
+    current_device = room
     with open(".last-device", "w") as device_file:
         device_file.write(current_device)
 
-    perform_request(base_url + '/' + room + '/volume/' + str(current_volume),None)
 
 def speak(phrase):
     print('SPEAKING: \'{0}\''.format(phrase))
+    #perform_room_request('say/' + urllib.quote(phrase))
     perform_room_request('say/' + phrase)
 
 
