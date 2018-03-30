@@ -1,0 +1,22 @@
+{ 'shuffle' : 
+    {'command': 'shuffle', 'label': 'Shuffle', 'image': "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
+    },
+    'repeat':
+    {'command': 'repeat', 'label': 'Repeat', 'image': "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp"
+    },
+    'playpause':
+    {'command': 'playpause', 'label: 'Play / Pause', 'image': "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_pause_circle_outline_black_48dp.png"
+    },
+    'next':
+    {'command': 'next', 'label: 'Skip to Next Song', 'image': "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_skip_next_black_48dp.png"
+    },
+    'whatsong':
+    {'command': 'saysong', 'label: 'What\'s Playing?', 'image': "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
+    },
+    'whatnext':
+    {'command': 'whatnext', 'label: 'What\'s Next?', 'image': "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
+    },
+    'buildqueue':
+    {'command': 'buildqueue', 'label: 'Build List of Songs', 'image': "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_playlist_add_black_48dp.png"
+    }    
+}
