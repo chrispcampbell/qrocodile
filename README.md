@@ -112,18 +112,30 @@ Finally, generate some cards and view the output in your browser:
 % open out/index.html
 ```
 
+The cards for Commands and Sonos Zones are generated separately.
+
+Create Sonos Zone cards using qrgen, it does not require a list file:
+
+```
+% python3 qrgen.py --zones --hostname <IP of node-sonos-http-api host>
+% open out/zones.html
+```
+
+
+Create Command cards using qrgen and the text file command_cards.txt:
+
+```
+% python3 qrgen.py --commands
+% open out/commands.html
+```
+
+
 It'll look something like this:
 
 <p align="center">
 <img src="docs/images/sheet.jpg" width="50%" height="50%">
 </p>
 
-Create Sonos Zone cards using qrgen:
-
-```
-% python3 qrgen.py --zones --hostname <IP of node-sonos-http-api host>
-% open out/zones.html
-```
 
 
 ### 4. Start `qrplay`

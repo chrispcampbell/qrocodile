@@ -3,13 +3,3 @@ spotify:track:5CMjjywI0eZMixPeqNd75R
 spotify:album:4m2880jivSbbyEGAKfITCa
 spotify:album:04uhhcjGVCHodMgZjXOlye
 spotify:user:freemanfamilybanff:playlist:30CmRQYuirciDRK7cerLsm  # thomas the tank engine
-cmd:playpause
-cmd:next
-cmd:turntable
-cmd:livingroom
-cmd:diningandkitchen
-cmd:songonly
-cmd:wholealbum
-cmd:buildqueue
-cmd:whatsong
-cmd:whatnext

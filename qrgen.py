@@ -12,25 +12,8 @@ import sys
 import requests  # replaces urllib & urllib2
 import pyqrcode  # https://pypi.python.org/pypi/PyQRCode replaces system qrencode
 
-# requires
-# 1. curl
-
-
-# Build a map of the known commands
-# TODO: Might be better to specify these in the input file to allow for more customization
-# (instead of hardcoding names/images here)
-commands = {
-  'cmd:playpause': ('Play / Pause', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_pause_circle_outline_black_48dp.png'),
-  'cmd:next': ('Skip to Next Song', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_skip_next_black_48dp.png'),
-  'cmd:turntable': ('Turntable', 'http://moziru.com/images/record-player-clipart-vector-3.jpg'),
-  'cmd:livingroom': ('Living Room', 'http://icons.iconarchive.com/icons/icons8/ios7/512/Household-Livingroom-icon.png'),
-  'cmd:diningandkitchen': ('Dining Room / Kitchen', 'https://png.icons8.com/ios/540//dining-room.png'),
-  'cmd:songonly': ('Play the Song Only', 'https://raw.githubusercontent.com/google/material-design-icons/master/image/drawable-xxxhdpi/ic_audiotrack_black_48dp.png'),
-  'cmd:wholealbum': ('Play the Whole Album', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_album_black_48dp.png'),
-  'cmd:buildqueue': ('Build List of Songs', 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_playlist_add_black_48dp.png'),
-  'cmd:whatsong': ('What\'s Playing?', 'https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png'),
-  'cmd:whatnext': ('What\'s Next?', 'https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png')
-}
+# Build a map of the known commands and pictures of their cards
+commands = json.load(open('command_cards.txt'))
 
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Generates an HTML page containing cards with embedded QR codes that can be interpreted by `qrplay`.')
@@ -40,6 +23,7 @@ arg_parser.add_argument('--list-library', action='store_true', help='list all av
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
 arg_parser.add_argument('--zones', action='store_true', help='generate cards for all available Sonos Zones')
+arg_parser.add_argument('--commands', action='store_true', help='generate cards for all commands defined in commands_cards.txt')
 args = arg_parser.parse_args()
 print(args)
 
@@ -58,7 +42,6 @@ else:
     sp = None
 
 def perform_request(url,type):
-
     response = requests.get(url)
     if type == "txt":
     	result = response.text
@@ -149,23 +132,19 @@ def strip_title_junk(title):
     return title
 
 
-def process_command(uri, index):
-    (cmdname, arturl) = commands[uri]
-    #print out current def
+def process_command(uri, index):  # new function using the outside json file
+    cmdname = commands[uri]['command']
+    arturl = commands[uri]['image']
 
     # Determine the output image file names
     qrout = 'out/{0}qr.png'.format(index)
     artout = 'out/{0}art.jpg'.format(index)
-    
-    # Create a QR code from the command URI
-    ##print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
+
     qr1 = pyqrcode.create(uri)
     qr1.png(qrout, scale=6)
     qr1.show()
 
-    # Fetch the artwork and save to the output directory
     print(subprocess.check_output(['curl', arturl, '-o', artout]))
-
     return (cmdname, None, None)
         
     
@@ -191,7 +170,6 @@ def process_spotify_track(uri, index):
     artout = 'out/{0}art.jpg'.format(index)
     
     # Create a QR code from the track URI
-    ##print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
     qr1 = pyqrcode.create(uri)
     qr1.png(qrout, scale=6)
     qr1.show()
@@ -199,7 +177,6 @@ def process_spotify_track(uri, index):
     # Fetch the artwork and save to the output directory
     print(subprocess.check_output(['curl', arturl, '-o', artout]))
     
-    #return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
     return (song, album, artist) # removed encoding into utf-8 as it turns str into bytes
 
 def process_spotify_album(uri, index):
@@ -226,7 +203,6 @@ def process_spotify_album(uri, index):
     artout = 'out/{0}art.jpg'.format(index)
     
     # Create a QR code from the album URI
-    ##print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
     qr1 = pyqrcode.create(uri)
     qr1.png(qrout, scale=6)
     qr1.show()
@@ -235,7 +211,6 @@ def process_spotify_album(uri, index):
     print(subprocess.check_output(['curl', arturl, '-o', artout]))
     
     album_blank = ""
-    #return (album.encode('utf-8'), artist.encode('utf-8'))
     return (album_name, album_blank, artist_name) # removed encoding into utf-8 as it turns str into bytes
 
 def process_spotify_playlist(uri, index):
@@ -257,7 +232,6 @@ def process_spotify_playlist(uri, index):
     artout = 'out/{0}art.jpg'.format(index)
     
     # Create a QR code from the album URI
-    ##print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
     qr1 = pyqrcode.create(uri)
     qr1.png(qrout, scale=6)
     qr1.show()
@@ -266,7 +240,6 @@ def process_spotify_playlist(uri, index):
     print(subprocess.check_output(['curl', arturl, '-o', artout]))
     
     playlist_blank = ""
-    #return (album.encode('utf-8'), artist.encode('utf-8'))
     return (playlist_name, playlist_owner, playlist_blank) # removed encoding into utf-8 as it turns str into bytes
 
 
@@ -300,14 +273,12 @@ def process_library_track(uri, index):
     artout = 'out/{0}art.jpg'.format(index)
 
     # Create a QR code from the track URI
-##    print(subprocess.check_output(['qrencode', '-o', qrout, uri]))
     qr1 = pyqrcode.create(uri)
     qr1.png(qrout, scale=6)
     qr1.show()
 
     # Fetch the artwork and save to the output directory
     print(subprocess.check_output(['curl', arturl, '-o', artout]))
-
     return (song.encode('utf-8'), album.encode('utf-8'), artist.encode('utf-8'))
 
 
@@ -370,8 +341,14 @@ def generate_cards():
         os.mkdir(outdir)
 
     # Read the file containing the list of commands and songs to generate
-    with open(args.input) as f:
-        lines = f.readlines()
+
+    if args.input:
+        with open(args.input) as f:
+            lines = f.readlines()
+    elif args.commands:
+        lines=[]
+        for command in commands:
+            lines.append(commands[command]['command'])
 
     # The index of the current item being processed
     index = 0
@@ -442,10 +419,12 @@ def generate_cards():
     html += '</body>\n'
     html += '</html>\n'
 
-    #print(html)
-
-    with open('out/index.html', 'w') as f:
-        f.write(html)
+    if args.commands:
+        with open('out/commands.html', 'w') as f:
+            f.write(html)
+    else:
+        with open('out/index.html', 'w') as f:
+            f.write(html)
 
 if args.input:
     generate_cards()
@@ -453,3 +432,5 @@ elif args.list_library:
     list_library_tracks()
 elif args.zones:
     get_zones()
+elif args.commands:
+    generate_cards()
