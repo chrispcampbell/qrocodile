@@ -7,12 +7,17 @@ A kid-friendly system for controlling Sonos with QR codes.
 This is a fork of the qrocodile project originally developed by https://github.com/chrispcampbell
 
 Changes to the original:
-* support for Spotify Albums & Playlists
-* generation of  cards for the Sonos Zones (Rooms) available in your house
+* support for Spotify **Albums** & **Playlists** (using the Sonos Queue)
+* generation of cards for the Sonos Zones (Rooms) available on your network
+* creation of a file with defaults for Sonos Room, Spotify User and node-sonos host
 * for the generation of QR codes, using the **pyqrcode** Python module instead of the OS package
 * replaced urllib with **requests** python module
-* updated to python3
+* updated to python 3.5
 * disabled use of webkit2png
+* reduced reliance on hard-coded settings
+* added variables for default announcement volume and language code
+* separated card creation files between: Commands, Music and Sonos Rooms
+* added shuffle on/off and repeat on/off commands
 
 For the whole story behind qrocodile, see the original project https://github.com/chrispcampbell/qrocodile
 
@@ -26,9 +31,9 @@ On the hardware side, it's just a camera-attached Raspberry Pi nested inside som
 
 On the software side, there are two separate Python scripts:
 
-* Run `qrgen.py` on your primary computer.  It takes a list of songs (from your local music library and/or Spotify) and commands (e.g. play/pause, next) and spits out an HTML page containing little cards imprinted with an icon and text on one side, and a QR code on the other. Print them out, then cut, fold, and glue until you're left with a neat little stack of cards.
+* Run `qrgen.py` on your primary computer. It takes a list of songs (from your local music library and/or Spotify) and commands (e.g. play/pause, next) and spits out an HTML page containing little cards imprinted with an icon and text on one side, and a QR code on the other. Print them out, then cut, fold, and glue until you're left with a neat little stack of cards.
 
-* Run `qrplay.py` on your Raspberry Pi. It launches a process that uses the attached camera to scan for QR codes, then translates those codes into commands (e.g. "speak this phrase", "play [song] in this room", "build a queue").
+* Run `qrplay.py` on your Raspberry Pi. It launches a process that uses the attached camera to scan for QR codes, then translates those codes into commands (e.g. "speak this phrase", "play [song|album|playlist] in this room", "build a queue").
 
 Python requirements:
 
@@ -42,7 +47,7 @@ Python requirements:
 
 ### 1. Prepare your Raspberry Pi
 
-Originally built this using a Raspberry Pi 3 Model B (running Raspbian), it also works using a Raspberry Pi Zero W and an Arducam OV5647 camera module.  Things may or may not work with other models (for example, how you control the onboard LEDs varies by model).
+Originally built this using a Raspberry Pi 3 Model B (running Raspbian, it also works using a Raspberry Pi Zero W) and an Arducam OV5647 camera module. Things may or may not work with other models (for example, how you control the onboard LEDs varies by model).
 
 To set up the camera module, I had to add an entry in `/etc/modules`:
 
@@ -95,7 +100,13 @@ First, clone the `qrocodile` repo if you haven't already on your primary compute
 % cd qrocodile
 ```
 
-Spotify track/album/playlist URIs can be found in the Spotify app by clicking a song, then selecting "Share > Copy Spotify URI".  For `qrgen` to access your Spotify account, you'll need to set up your own Spotify app token.  (More on that in the `spotipy` [documentation](http://spotipy.readthedocs.io/en/latest/).)
+Spotify track/album/playlist URIs can be found in the Spotify app by clicking a song|album|playlist, then selecting "Share > Copy Spotify URI".  For `qrgen` to access your Spotify account, you'll need to set up your own Spotify app token.  (More on that in the `spotipy` [documentation](http://spotipy.readthedocs.io/en/latest/).)
+
+You can use `qrgen` to generate a file containing your defaults, you will be asked for the Spotfy username, the IP address of the server running the node-sonos-http-api and the default Sonos room. The last used Sonos Room will override the Default.
+
+```
+% python3 qrgen.py --set-defaults
+```
 
 You can use `qrgen` to list out URIs for all available tracks in your music library (these examples assume `node-sonos-http-api` is running on `localhost`):
 
@@ -103,9 +114,9 @@ You can use `qrgen` to list out URIs for all available tracks in your music libr
 % python3 qrgen.py --hostname <IP of node-sonos-http-api host> --list-library
 ```
 
-Next, create a text file that lists the different cards you want to create.  (See `example.txt` for some possibilities.)
+Next, create a text file that lists the different music cards you want to create.  (See `example.txt` for some possibilities.)
 
-Finally, generate some cards and view the output in your browser:
+Finally, generate some cards and view the output in your browser. Omit `--hostname` and `--spotify-user` if you created a defaults file (see `--set-defaults` above).
 
 ```
 % python3 qrgen.py --hostname <IP of node-sonos-http-api host> --input example.txt --generate-images --spotify-user <spotify username>
@@ -114,7 +125,7 @@ Finally, generate some cards and view the output in your browser:
 
 The cards for Commands and Sonos Zones are generated separately.
 
-Create Sonos Zone cards using qrgen, it does not require a list file:
+Create Sonos Zone cards using `qrgen`, it does not require a list file. Omit `--hostname` if you created a defaults file.
 
 ```
 % python3 qrgen.py --zones --hostname <IP of node-sonos-http-api host>
@@ -122,7 +133,7 @@ Create Sonos Zone cards using qrgen, it does not require a list file:
 ```
 
 
-Create Command cards using qrgen and the text file command_cards.txt:
+Create Command cards using qrgen and the text file command_cards.txt. Use the file command_cards.txt as a template, remove the commands you don't need and issue the command to generate the cards.
 
 ```
 % python3 qrgen.py --commands
@@ -197,7 +208,7 @@ Command cards are used to control your Sonos system, performing actions like swi
 
 This project was a great inspiration to develop something that my kids can use. It was a relatively easy project because the groundwork was already laid down by chriscampbell and a series of other people.
 
-Many thanks to the authors following libraries and tools:
+Many thanks to the authors' following libraries and tools:
 
 * [qrocodile](https://github.com/chrispcampbell/qrocodile)
 * [node-sonos-http-api](https://github.com/jishi/node-sonos-http-api)
