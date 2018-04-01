@@ -24,6 +24,7 @@ arg_parser.add_argument('--hostname', default='localhost', help='the hostname or
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
 arg_parser.add_argument('--zones', action='store_true', help='generate out/zones.html with cards for all available Sonos Zones')
 arg_parser.add_argument('--commands', action='store_true', help='generate out/commands.html with cards for all commands defined in commands_cards.txt')
+arg_parser.add_argument('--set-defaults', action='store_true', help='generate out/commands.html with cards for all commands defined in commands_cards.txt')
 args = arg_parser.parse_args()
 print(args)
 
@@ -51,6 +52,23 @@ def perform_request(url,type):
     	result = response.text
     return result
 
+def set_defaults():
+    # collect 3 items to use with qrplay: spotify username, node-sonos server, default sonos zone
+    defaults = {} # dict
+    defaults.update({"default_spotify_user": input("Spotify Username: ") })
+    defaults.update({"default_hostname" : input("IP Address of node-sonos-http-api: ")})
+    rooms_json=perform_request('http://' + defaults['default_hostname'] + ':5005/zones','json')
+    sonoszonesavail=[] #list
+    for n,val in enumerate(rooms_json):
+        sonoszonesavail.append(rooms_json[n]['coordinator']['roomName'])
+    print("\nList of Rooms: ", sonoszonesavail,"\n")
+    defaults.update({"default_room" : input("Default Sonos Zone/Room: ")})
+    current_path = os.getcwd()
+    output_file_defaults = os.path.join(current_path,"my_defaults.txt")
+    file = open(output_file_defaults, 'w')
+    json.dump(defaults,file,indent=2)
+    file.close()
+
 def get_zones():
     rooms_json=perform_request(base_url + '/zones','json')
     
@@ -60,15 +78,10 @@ def get_zones():
         
     # create a list with all available rooms
     sonoszonesavail=[] #list
-    sonoszonesavail_dict={} #dict
-    # we need to populate the dict with
-    ## room name
-    ## art url
     sonosarturl = 'https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_volume_up_black_48dp.png'
     sonosarturl = 'https://d21buns5ku92am.cloudfront.net/61071/images/181023-sonos-logo-black-b45ff7-original-1443493203.png'
     
     for n,val in enumerate(rooms_json):
-        sonoszonesavail_dict.update({n: ()}) # creating a tuple
         sonoszonesavail.append(rooms_json[n]['coordinator']['roomName'])
     print("\nList of Zones: ", sonoszonesavail,"\n")
     
@@ -435,3 +448,5 @@ elif args.zones:
     get_zones()
 elif args.commands:
     generate_cards()
+elif args.set_defaults:
+    set_defaults()

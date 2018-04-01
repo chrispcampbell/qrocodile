@@ -32,32 +32,40 @@ import requests  # replaces urllib & urllib2
 import spotipy
 import spotipy.util as util
 
-# Parse the command line arguments
-arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
-arg_parser.add_argument('--default-device', default='Living Room', help='the name of your default device/room')
-arg_parser.add_argument('--linein-source', default='Living Room', help='the name of the device/room used as the line-in source')
-arg_parser.add_argument('--hostname', default='192.168.188.14', help='the hostname or IP address of the machine running `node-sonos-http-api`')
-arg_parser.add_argument('--skip-load', action='store_true', help='skip loading of the music library (useful if the server has already loaded it)')
-arg_parser.add_argument('--debug-file', help='read commands from a file instead of launching scanner')
-arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
-args = arg_parser.parse_args()
-print(args)
-
-# setting base_url used to access sonos-http-api
-base_url = 'http://' + args.hostname + ':5005'
-
-# setting the volume for announcements
-announcementvolume = 10
-# 40 is way too loud
-
 # setting up logfile qrplay.log
-LOG_FORMAT = "%(Levelname)s %(asctime)s - %(message)s"
+LOG_FORMAT = "%(levelname)s %(asctime)s - %(message)s"
 logging.basicConfig(filename = "qrplay.log", 
                     filemode = "w",
                     level = logging.INFO,
                     format = LOG_FORMAT)
 logger = logging.getLogger()
 
+# loading defaults from my_defaults.txt
+current_path = os.getcwd()
+defaults = json.load(open("my_defaults.txt", "r"))
+default_room=defaults['default_room']
+default_spotify_user = defaults['default_spotify_user']
+default_hostname = defaults['default_hostname']
+logger.info("imported defaults: " + str(defaults))
+
+# Parse the command line arguments
+arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
+arg_parser.add_argument('--default-device', default=default_room, help='the name of your default device/room')
+arg_parser.add_argument('--linein-source', default='Living Room', help='the name of the device/room used as the line-in source')
+arg_parser.add_argument('--hostname', default=default_hostname, help='the hostname or IP address of the machine running `node-sonos-http-api`')
+arg_parser.add_argument('--skip-load', action='store_true', help='skip loading of the music library (useful if the server has already loaded it)')
+arg_parser.add_argument('--debug-file', help='read commands from a file instead of launching scanner')
+arg_parser.add_argument('--spotify-username', default=default_spotify_user, help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
+args = arg_parser.parse_args()
+print(args)
+
+# setting base_url used to access sonos-http-api
+base_url = 'http://' + args.hostname + ':5005'
+
+# setting the language code and volume for announcements
+announcementlang = "en-gb" # see https://github.com/chrispcampbell/node-sonos-http-api/tree/qrocodile
+announcementvolume = 10
+# 40 is way too loud
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
@@ -81,6 +89,7 @@ try:
         current_device = device_file.read().replace('\n', '')
         print('Defaulting to last used room: ' + current_device)
 except:
+    current_device = defaults['default_room']
     current_device = args.default_device
     print('Initial room: ' + current_device)
 
@@ -135,7 +144,8 @@ def switch_to_room(room):
 
 def speak(phrase):
     logger.info('SPEAKING: \'{0}\''.format(phrase))
-    perform_room_request('say/' + phrase,announcementvolume)
+    #setting language to en-gb and level 
+    perform_room_request('say/' + phrase + "/"+ str(announcementlang) + "/" + str(announcementvolume))
 
 
 # Causes the onboard green LED to blink on and off twice.  (This assumes Raspberry Pi 3 Model B; your
@@ -178,7 +188,7 @@ def handle_command(qrcode):
         logger.info('Switching to '+ newroom)
         switch_to_room(newroom)
         phrase = 'Switching to ' + newroom,10
-    elif qrcode.startswith 'cmd:':
+    elif qrcode.startswith('cmd:'):
         action = qrcode.split(":")[1]
         perform_room_request(action)
         phrase = None
