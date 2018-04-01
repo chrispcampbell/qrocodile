@@ -241,7 +241,7 @@ def handle_spotify_item(uri):
     perform_room_request('spotify/{0}/{1}'.format(action, uri))
 
 def handle_spotify_album(uri):
-    print('PLAYING ALBUM FROM SPOTIFY: ' + uri)
+    print('PLAYING ALBUM FROM SPOTIFY: ' + uri + '\n')
     
     album_raw = sp.album(uri)
     album_name = album_raw["name"]
