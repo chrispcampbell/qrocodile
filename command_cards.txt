@@ -1,14 +1,14 @@
-{ "cmd:shuffle_on" : 
-    {"command": "cmd:shuffle_on", "label": "Shuffle ON", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
+{ "cmd:shuffle/on" : 
+    {"command": "cmd:shuffle/on", "label": "Shuffle ON", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
     },
-    "cmd:shuffle_off" : 
-    {"command": "cmd:shuffle_off", "label": "Shuffle OFF", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
+    "cmd:shuffle/off" : 
+    {"command": "cmd:shuffle/off", "label": "Shuffle OFF", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
     },
-    "cmd:repeat_on":
-    {"command": "cmd:repeat_on", "label": "Repeat ON", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp.png"
+    "cmd:repeat/on":
+    {"command": "cmd:repeat/on", "label": "Repeat ON", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp.png"
     },
-    "cmd:repeat_off":
-    {"command": "cmd:repeat_off", "label": "Repeat OFF", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp.png"
+    "cmd:repeat/off":
+    {"command": "cmd:repeat/off", "label": "Repeat OFF", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp.png"
     },
     "cmd:playpause":
     {"command": "cmd:playpause", "label": "Play / Pause", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_pause_circle_outline_black_48dp.png"

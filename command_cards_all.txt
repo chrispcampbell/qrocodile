@@ -1,13 +1,13 @@
-{ "cmd:shuffle_on" : 
+{ "cmd:shuffle/on" : 
     {"command": "cmd:shuffle/on", "label": "Shuffle", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
     },
-    "cmd:shuffle_off" : 
+    "cmd:shuffle/off" : 
     {"command": "cmd:shuffle/off", "label": "Shuffle", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
     },
-    "cmd:repeat_on":
+    "cmd:repeat/on":
     {"command": "cmd:repeat/on", "label": "Repeat", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp.png"
     },
-    "cmd:repeat_off":
+    "cmd:repeat/off":
     {"command": "cmd:repeat/off", "label": "Repeat", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp.png"
     },
     "cmd:playpause":
