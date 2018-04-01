@@ -379,6 +379,8 @@ def generate_cards():
 
         if line.startswith('cmd:'):
             (song, album, artist) = process_command(line, index)
+        elif line.startswith('mode:'):
+            (song, album, artist) = process_command(line, index)
         elif line.startswith('spotify:album:'):
             (song, album, artist) = process_spotify_album(line, index)
         elif line.startswith('spotify:track:'):

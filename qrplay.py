@@ -45,7 +45,10 @@ print(args)
 
 # setting base_url used to access sonos-http-api
 base_url = 'http://' + args.hostname + ':5005'
-#base_url = 'http://' + hostname + ':5005'
+
+# setting the volume for announcements
+announcementvolume = 10
+# 40 is way too loud
 
 # setting up logfile qrplay.log
 LOG_FORMAT = "%(Levelname)s %(asctime)s - %(message)s"
@@ -132,7 +135,7 @@ def switch_to_room(room):
 
 def speak(phrase):
     logger.info('SPEAKING: \'{0}\''.format(phrase))
-    perform_room_request('say/' + phrase)
+    perform_room_request('say/' + phrase,announcementvolume)
 
 
 # Causes the onboard green LED to blink on and off twice.  (This assumes Raspberry Pi 3 Model B; your
@@ -166,61 +169,30 @@ def handle_command(qrcode):
 
     print('HANDLING COMMAND: ' + qrcode)
 
-    if qrcode == 'cmd:playpause':
-        perform_room_request('playpause')
-        phrase = None
-    elif qrcode == 'cmd:shuffle':
-        room_state = perform_room_request('state')
-        if room_state['playMode']['shuffle'] == "True":
-            perform_room_request('shuffle/off')
-            #phrase = "Shuffle disabled"
-        else:
-            perform_room_request('shuffle/on')
-            #phrase = "Shuffle enabled"
-    elif qrcode == 'cmd:repeat':
-        room_state = perform_room_request('state')
-        if room_state['playMode']['repeat'] == "True":
-            perform_room_request('repeat/off')
-            phrase = "Repeat disabled"
-        else:
-            perform_room_request('repeat/on')
-            phrase = "Repeat All"
-    elif qrcode == 'cmd:next':
-        perform_room_request('next')
-        phrase = None
-    elif qrcode == 'cmd:turntable':
-        #perform_room_request('linein/' + urllib.quote(args.linein_source))
+    if qrcode == 'cmd:turntable':
         perform_room_request('linein/' + args.linein_source)
         perform_room_request('play')
-        phrase = 'I\'ve activated the turntable'
-    elif qrcode == 'cmd:livingroom':
-        switch_to_room('Living Room')
-        phrase = 'I\'m switching to the living room'
-    elif qrcode == 'cmd:diningandkitchen':
-        switch_to_room('Dining Room')
-        phrase = 'I\'m switching to the dining room'
-    elif qrcode == 'cmd:songonly':
-        current_mode = Mode.PLAY_SONG_IMMEDIATELY
-        phrase = 'Show me a card and I\'ll play that song right away'
-    elif qrcode == 'cmd:wholealbum':
-        current_mode = Mode.PLAY_ALBUM_IMMEDIATELY
-        phrase = 'Show me a card and I\'ll play the whole album'
-    elif qrcode == 'cmd:buildqueue':
-        current_mode = Mode.BUILD_QUEUE
-        #perform_room_request('pause')
-        perform_room_request('clearqueue')
-        phrase = 'Let\'s build a list of songs'
-    elif qrcode == 'cmd:whatsong':
-        perform_room_request('saysong')
-        phrase = None
+        phrase = 'I\'ve activated the turntable',10
     elif qrcode.startswith('changezone:'):
         newroom = qrcode.split(":")[1]
-        print('Switching to '+ newroom)
+        logger.info('Switching to '+ newroom)
         switch_to_room(newroom)
-        phrase = 'I\'m switching to the ' + newroom
-    elif qrcode == 'cmd:whatnext':
-        perform_room_request('saynext')
+        phrase = 'Switching to ' + newroom,10
+    elif qrcode.startswith 'cmd:':
+        action = qrcode.split(":")[1]
+        perform_room_request(action)
         phrase = None
+    # no cards printed out for these
+    #elif qrcode == 'mode:songonly':
+    #    current_mode = Mode.PLAY_SONG_IMMEDIATELY
+    #    phrase = 'Show me a card and I\'ll play that song right away'
+    #elif qrcode == 'mode:wholealbum':
+    #    current_mode = Mode.PLAY_ALBUM_IMMEDIATELY
+    #    phrase = 'Show me a card and I\'ll play the whole album'
+    elif qrcode == 'mode:buildqueue':
+        current_mode = Mode.BUILD_QUEUE
+        perform_room_request('clearqueue')
+        phrase = 'Let\'s build a list of songs'
     else:
         phrase = 'Hmm, I don\'t recognize that command'
 
@@ -272,7 +244,11 @@ def handle_spotify_album(uri):
     # clear the sonos queue
     action = 'clearqueue'
     perform_room_request('{0}'.format(action))
-        
+
+    # turning off shuffle before starting the new queue
+    action = 'shuffle/off'
+    perform_room_request('{0}'.format(action))
+            
     for track in album_tracks_raw['items']:
         track_number = track["track_number"]
         track_name = track["name"]
@@ -340,13 +316,14 @@ def handle_qrcode(qrcode):
 
     if qrcode.startswith('cmd:'):
         handle_command(qrcode)
+    elif qrcode.startswith('mode:'):
+        handle_command(qrcode)
     elif qrcode.startswith('spotify:album:'):
-        # CONCEPT = OK!
         handle_spotify_album(qrcode)
     elif qrcode.startswith('spotify:artist:'):
         # NOT READY
         handle_spotify_artist(qrcode)
-    elif qrcode.startswith('spotify:user:'): # playlist
+    elif qrcode.startswith('spotify:user:'):
         if (":playlist:") in qrcode:
             handle_spotify_playlist(qrcode)
     elif qrcode.startswith('spotify:'):
