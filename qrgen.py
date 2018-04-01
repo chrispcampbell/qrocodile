@@ -22,8 +22,8 @@ arg_parser.add_argument('--generate-images', action='store_true', help='generate
 arg_parser.add_argument('--list-library', action='store_true', help='list all available library tracks')
 arg_parser.add_argument('--hostname', default='localhost', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
-arg_parser.add_argument('--zones', action='store_true', help='generate cards for all available Sonos Zones')
-arg_parser.add_argument('--commands', action='store_true', help='generate cards for all commands defined in commands_cards.txt')
+arg_parser.add_argument('--zones', action='store_true', help='generate out/zones.html with cards for all available Sonos Zones')
+arg_parser.add_argument('--commands', action='store_true', help='generate out/commands.html with cards for all commands defined in commands_cards.txt')
 args = arg_parser.parse_args()
 print(args)
 
@@ -133,11 +133,7 @@ def strip_title_junk(title):
 
 
 def process_command(uri, index):  # new function using the outside json file
-<<<<<<< HEAD
     cmdname = commands[uri]['label']
-=======
-    cmdname = commands[uri]['command']
->>>>>>> 0363634cf2d230560e3e1d7dd0dd4b8fc4d8ad88
     arturl = commands[uri]['image']
 
     # Determine the output image file names
@@ -329,11 +325,11 @@ def generate_individual_card_image(index, artist, album, song):
     # Then convert the HTML to a PNG image (beware the hardcoded values; these need to align
     # with the dimensions in `cards.css`)
     ## disabled conversion of HTML to PNG
-    ##png_filename = 'out/{0}'.format(index)
-    ##print(subprocess.check_output(['webkit2png', html_filename, '--scale=1.0', '--clipped', '--clipwidth=720', '--clipheight=640', '-o', png_filename]))
+    #png_filename = 'out/{0}'.format(index)
+    #print(subprocess.check_output(['webkit2png', html_filename, '--scale=1.0', '--clipped', '--clipwidth=720', '--clipheight=640', '-o', png_filename]))
 
     # Rename the file to remove the extra `-clipped` suffix that `webkit2png` includes by default
-    ##os.rename(png_filename + '-clipped.png', png_filename + 'card.png')
+    #os.rename(png_filename + '-clipped.png', png_filename + 'card.png')
 
 
 def generate_cards():
@@ -387,7 +383,6 @@ def generate_cards():
             (song, album, artist) = process_spotify_album(line, index)
         elif line.startswith('spotify:track:'):
             (song, album, artist) = process_spotify_track(line, index)
-        #elif line.startswith('spotify:user:',':playlist:'):
         elif line.startswith('spotify:user:'):
             if (":playlist:") in line:
                 (song, album, artist) = process_spotify_playlist(line, index)

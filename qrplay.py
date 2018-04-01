@@ -45,6 +45,7 @@ print(args)
 
 # setting base_url used to access sonos-http-api
 base_url = 'http://' + args.hostname + ':5005'
+#base_url = 'http://' + hostname + ':5005'
 
 # setting up logfile qrplay.log
 LOG_FORMAT = "%(Levelname)s %(asctime)s - %(message)s"
@@ -59,16 +60,17 @@ if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
     scope = 'user-library-read'
     token = util.prompt_for_user_token(args.spotify_username, scope)
+    #token = util.prompt_for_user_token(spotify_username, scope)
     if token:
         sp = spotipy.Spotify(auth=token)
-        logger.INFO("logged into Spotify")
+        logger.info("logged into Spotify")
     else:
         raise ValueError('Can\'t get Spotify token for ' + username)
-        logger.INFO('Can\'t get Spotify token for ' + username)
+        logger.info('Can\'t get Spotify token for ' + username)
 else:
     # No Spotify
     sp = None
-    logger.INFO('Not using a Spotify account)
+    logger.info('Not using a Spotify account')
 
 # Load the most recently used device, if available, otherwise fall back on the `default-device` argument
 try:
@@ -122,7 +124,6 @@ def perform_room_request(path):
 
 def switch_to_room(room):
     global current_device
-
     #perform_global_request('pauseall')
     current_device = room
     with open(".last-device", "w") as device_file:
@@ -130,8 +131,7 @@ def switch_to_room(room):
 
 
 def speak(phrase):
-    print('SPEAKING: \'{0}\''.format(phrase))
-    #perform_room_request('say/' + urllib.quote(phrase))
+    logger.info('SPEAKING: \'{0}\''.format(phrase))
     perform_room_request('say/' + phrase)
 
 
@@ -173,10 +173,10 @@ def handle_command(qrcode):
         room_state = perform_room_request('state')
         if room_state['playMode']['shuffle'] == "True":
             perform_room_request('shuffle/off')
-            phrase = "Shuffle disabled"
+            #phrase = "Shuffle disabled"
         else:
             perform_room_request('shuffle/on')
-            phrase = "Shuffle enabled"
+            #phrase = "Shuffle enabled"
     elif qrcode == 'cmd:repeat':
         room_state = perform_room_request('state')
         if room_state['playMode']['repeat'] == "True":
@@ -302,9 +302,16 @@ def handle_spotify_playlist(uri):
     # creating and updating the track list   
     playlist_tracks_raw = sp.user_playlist_tracks(sp_user,uri,limit=50,offset=0)
     playlist_tracks = {}
-        
+    # turning off shuffle before starting the new queue
+    action = 'shuffle/off'
+    perform_room_request('{0}'.format(action))
+    # when not able to add a track to the queue, spotipy resets the track # to 1
+    # in this case I just handled the track nr separately with n
+    n = 0
     for track in playlist_tracks_raw['items']:
-        track_number = track['track']['track_number']
+        n = n + 1
+        #track_number = track['track']['track_number'] # disabled as causing issues with non-playable tracks
+        track_number = n
         track_name = track['track']["name"]
         track_uri = track['track']["uri"]
         playlist_tracks.update({track_number: {}})

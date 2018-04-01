@@ -15,5 +15,8 @@
     },
     "cmd:whatnext":
     {"command": "cmd:whatnext", "label": "What's Next?", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
-    }   
+    },
+    "cmd:buildqueue":
+    {"command": "cmd:buildqueue", "label": "Build List of Songs", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_playlist_add_black_48dp.png"
+    }    
 }
