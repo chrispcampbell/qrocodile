@@ -145,7 +145,7 @@ def switch_to_room(room):
 def speak(phrase):
     logger.info('SPEAKING: \'{0}\''.format(phrase))
     #setting language to en-gb and level 
-    perform_room_request('say/' + phrase + "/"+ str(announcementlang) + "/" + str(announcementvolume))
+    perform_room_request('say/' + str(phrase) + "/"+ str(announcementlang) + "/" + str(announcementvolume))
 
 
 # Causes the onboard green LED to blink on and off twice.  (This assumes Raspberry Pi 3 Model B; your
