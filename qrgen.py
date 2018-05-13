@@ -14,29 +14,19 @@ import pyqrcode  # https://pypi.python.org/pypi/PyQRCode replaces system qrencod
 
 # Build a map of the known commands and pictures of their cards
 commands = json.load(open('command_cards.txt'))
-
-# loading defaults from my_defaults.txt
-current_path = os.getcwd()
-defaults = json.load(open("my_defaults.txt", "r"))
-default_room=defaults['default_room']
-default_spotify_user = defaults['default_spotify_user']
-default_hostname = defaults['default_hostname']
-print("imported defaults: " + str(defaults))
-
+  
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Generates an HTML page containing cards with embedded QR codes that can be interpreted by `qrplay`.')
 arg_parser.add_argument('--input', help='the file containing the list of commands and songs to generate')
 arg_parser.add_argument('--generate-images', action='store_true', help='generate an individual PNG image for each card')
 arg_parser.add_argument('--list-library', action='store_true', help='list all available library tracks')
-arg_parser.add_argument('--hostname', default=default_hostname, help='the hostname or IP address of the machine running `node-sonos-http-api`')
-arg_parser.add_argument('--spotify-username', default=default_spotify_user, help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
+arg_parser.add_argument('--hostname', help='the hostname or IP address of the machine running `node-sonos-http-api`')
+arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
 arg_parser.add_argument('--zones', action='store_true', help='generate out/zones.html with cards for all available Sonos Zones')
 arg_parser.add_argument('--commands', action='store_true', help='generate out/commands.html with cards for all commands defined in commands_cards.txt')
-arg_parser.add_argument('--set-defaults', action='store_true', help='generate out/commands.html with cards for all commands defined in commands_cards.txt')
+arg_parser.add_argument('--set-defaults', action='store_true', help='set-defaults')
 args = arg_parser.parse_args()
 print(args)
-
-base_url = 'http://' + args.hostname + ':5005'
 
 if args.spotify_username:
     # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
@@ -61,21 +51,40 @@ def perform_request(url,type):
     return result
 
 def set_defaults():
-    # collect 3 items to use with qrplay: spotify username, node-sonos server, default sonos zone
-    defaults = {} # dict
-    defaults.update({"default_spotify_user": input("Spotify Username: ") })
-    defaults.update({"default_hostname" : input("IP Address of node-sonos-http-api: ")})
-    rooms_json=perform_request('http://' + defaults['default_hostname'] + ':5005/zones','json')
-    sonoszonesavail=[] #list
-    for n,val in enumerate(rooms_json):
-        sonoszonesavail.append(rooms_json[n]['coordinator']['roomName'])
-    print("\nList of Rooms: ", sonoszonesavail,"\n")
-    defaults.update({"default_room" : input("Default Sonos Zone/Room: ")})
-    current_path = os.getcwd()
-    output_file_defaults = os.path.join(current_path,"my_defaults.txt")
-    file = open(output_file_defaults, 'w')
-    json.dump(defaults,file,indent=2)
-    file.close()
+  # collect 3 items to use with qrplay: spotify username, node-sonos server, default sonos zone
+  defaults = {} # dict
+  defaults.update({"default_spotify_user": input("Spotify Username: ") })
+  defaults.update({"default_hostname" : input("IP Address of node-sonos-http-api: ")})
+  rooms_json=perform_request('http://' + defaults['default_hostname'] + ':5005/zones','json')
+  sonoszonesavail=[] #list
+  for n,val in enumerate(rooms_json):
+    sonoszonesavail.append(rooms_json[n]['coordinator']['roomName'])
+  print("\nList of Rooms: ", sonoszonesavail,"\n")
+  defaults.update({"default_room" : input("Default Sonos Zone/Room: ")})
+  current_path = os.getcwd()
+  output_file_defaults = os.path.join(current_path,"my_defaults.txt")
+  file = open(output_file_defaults, 'w')
+  json.dump(defaults,file,indent=2)
+  file.close()
+
+
+# loading defaults from my_defaults.txt
+current_path = os.getcwd()
+my_defaults_file = os.path.join(current_path,"my_defaults.txt")
+if os.path.isfile(my_defaults_file):
+  defaults = json.load(open("my_defaults.txt", "r"))
+  default_room=defaults['default_room']
+  default_spotify_user = defaults['default_spotify_user']
+  default_hostname = defaults['default_hostname']
+  print("imported defaults: " + str(defaults))
+else:
+  set_defaults()
+
+if args.hostname == True:
+  base_url = 'http://' + args.hostname + ':5005'
+else:
+  defaults = json.load(open("my_defaults.txt", "r"))
+  base_url = 'http://' + defaults['default_hostname'] + ':5005'
 
 def get_zones():
     rooms_json=perform_request(base_url + '/zones','json')
