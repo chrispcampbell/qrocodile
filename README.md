@@ -42,6 +42,7 @@ Python requirements:
   * spotipy
   * requests
   * pyqrcode
+  * pypng
 
 ## Installation and Setup
 
