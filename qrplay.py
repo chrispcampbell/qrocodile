@@ -107,8 +107,9 @@ try:
         current_device = device_file.read().replace('\n', '')
         print('Defaulting to last used room: ' + current_device)
 except:
-    current_device = defaults['default_room']
-    current_device = args.default_device
+    #current_device = defaults['default_room']
+    #current_device = args.default_device
+    current_device = default_room
     print('Initial room: ' + current_device)
 
 # Keep track of the last-seen code
