@@ -129,6 +129,7 @@ else:
 
 
 def get_zones():
+    check_node_sonos_http_api()
     rooms_json=perform_request(base_url + '/zones','json')
     
     current_path = os.getcwd()
