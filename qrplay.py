@@ -34,7 +34,9 @@ import spotipy.util as util
 
 # setting up logfile qrplay.log
 LOG_FORMAT = "%(levelname)s %(asctime)s - %(message)s"
-logging.basicConfig(filename = "/var/log/qrplay.log", 
+current_path = os.getcwd()
+output_file_defaults = os.path.join(current_path,"qrplay.log")
+logging.basicConfig(filename = output_file_defaults, 
                     filemode = "w",
                     level = logging.INFO,
                     format = LOG_FORMAT)
@@ -425,6 +427,7 @@ if args.debug_file:
     # Run through a list of codes from a local file
     read_debug_script()
 else:
+    load_defaults()
     # Start the QR code reader
     ## --nodisplay required as running pi headless
     ## had the error "spawning input thread: Invalid argument (22)"
