@@ -423,10 +423,9 @@ elif args.spotify_username:
     else:
         raise ValueError('Can\'t get Spotify token for ' + username)
         logger.info('Can\'t get Spotify token for ' + username)
+        sp = None
+        logger.info('Not using a Spotify account')
 else:
-    # No Spotify
-    sp = None
-    logger.info('Not using a Spotify account')
     #load_defaults()
     # Start the QR code reader
     ## --nodisplay required as running pi headless
