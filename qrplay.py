@@ -42,6 +42,45 @@ logging.basicConfig(filename = output_file_defaults,
                     format = LOG_FORMAT)
 logger = logging.getLogger()
 
+def check_node_sonos_http_api():
+    import socket
+    global default_hostname
+    port = 5005
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = s.connect_ex((default_hostname,port))
+    if result == 0:
+        print("port is open")
+    else:
+        default_hostname = '127.0.0.1'
+        print("Port is not open")
+        print("setting default_hostname to localhost")
+        defaults = {} # dict
+        defaults.update({"default_spotify_user": default_spotify_user })
+        defaults.update({"default_hostname" : default_hostname})
+        defaults.update({"default_room" : default_room})
+        current_path = os.getcwd()
+        output_file_defaults = os.path.join(current_path,"my_defaults.txt")
+        file = open(output_file_defaults, 'w')
+        json.dump(defaults,file,indent=2)
+        file.close()
+    s.close()
+
+def load_defaults():
+    # loading defaults from my_defaults.txt
+    current_path = os.getcwd()
+    defaults = json.load(open("my_defaults.txt", "r"))
+    global default_room
+    global default_spotify_user
+    global default_hostname
+    default_room=defaults['default_room']
+    default_spotify_user = defaults['default_spotify_user']
+    default_hostname = defaults['default_hostname']
+    check_node_sonos_http_api()
+    #logger.info("imported defaults: " + str(defaults))
+    return(default_room,default_spotify_user,default_hostname)
+
+load_defaults()
+
 # Parse the command line arguments
 arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
 arg_parser.add_argument('--default-device', default=default_room, help='the name of your default device/room')
@@ -97,44 +136,6 @@ class Mode:
 
 current_mode = Mode.PLAY_SONG_IMMEDIATELY
 
-def check_node_sonos_http_api():
-    import socket
-    global default_hostname
-    port = 5005
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = s.connect_ex((default_hostname,port))
-    if result == 0:
-        print("port is open")
-    else:
-        default_hostname = '127.0.0.1'
-        print("Port is not open")
-        print("setting default_hostname to localhost")
-        defaults = {} # dict
-        defaults.update({"default_spotify_user": default_spotify_user })
-        defaults.update({"default_hostname" : default_hostname})
-        defaults.update({"default_room" : default_room})
-        current_path = os.getcwd()
-        output_file_defaults = os.path.join(current_path,"my_defaults.txt")
-        file = open(output_file_defaults, 'w')
-        json.dump(defaults,file,indent=2)
-        file.close()
-    s.close()
-
-def load_defaults():
-    # loading defaults from my_defaults.txt
-    current_path = os.getcwd()
-    defaults = json.load(open("my_defaults.txt", "r"))
-    global default_room
-    global default_spotify_user
-    global default_hostname
-    default_room=defaults['default_room']
-    default_spotify_user = defaults['default_spotify_user']
-    default_hostname = defaults['default_hostname']
-    check_node_sonos_http_api()
-    #logger.info("imported defaults: " + str(defaults))
-    return(default_room,default_spotify_user,default_hostname)
-
-load_defaults()
 
 def perform_request(url,type):
     # as with qrgen, this function has been expanded
