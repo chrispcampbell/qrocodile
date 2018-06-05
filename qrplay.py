@@ -43,6 +43,8 @@ logging.basicConfig(filename = output_file_defaults,
 logger = logging.getLogger()
 
 def check_node_sonos_http_api():
+    """ function to check if port 5005 is available
+    ... and if not, change my_defaults file to use localhost"""
     import socket
     global default_hostname
     port = 5005
@@ -82,24 +84,27 @@ def load_defaults():
 load_defaults()
 
 # Parse the command line arguments
+# removed all the default= arguments as I'd like to use the contents of the my_defaults.txt file
 arg_parser = argparse.ArgumentParser(description='Translates QR codes detected by a camera into Sonos commands.')
-arg_parser.add_argument('--default-device', default=default_room, help='the name of your default device/room')
-arg_parser.add_argument('--linein-source', default='Living Room', help='the name of the device/room used as the line-in source')
-arg_parser.add_argument('--hostname', default=default_hostname, help='the hostname or IP address of the machine running `node-sonos-http-api`')
+arg_parser.add_argument('--default-device', help='the name of your default device/room')
+arg_parser.add_argument('--linein-source', help='the name of the device/room used as the line-in source')
+arg_parser.add_argument('--hostname', help='the hostname or IP address of the machine running `node-sonos-http-api`')
 arg_parser.add_argument('--skip-load', action='store_true', help='skip loading of the music library (useful if the server has already loaded it)')
 arg_parser.add_argument('--debug-file', help='read commands from a file instead of launching scanner')
-arg_parser.add_argument('--spotify-username', default=default_spotify_user, help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
+arg_parser.add_argument('--spotify-username', help='the username used to set up Spotify access (only needed if you want to generate cards for Spotify tracks)')
 args = arg_parser.parse_args()
-print(args)
+print('Args=' + str(args))
 
 # setting base_url used to access sonos-http-api
-base_url = 'http://' + args.hostname + ':5005'
+if args.hostname:
+    base_url = 'http://' + args.hostname + ':5005'
+else:
+    base_url = 'http://' + default_hostname + ':5005'
 
 # setting the language code and volume for announcements
 announcementlang = "en-gb" # see https://github.com/chrispcampbell/node-sonos-http-api/tree/qrocodile
-announcementvolume = 10
 # 40 is way too loud
-
+announcementvolume = 10
 
 # Load the most recently used device, if available, otherwise fall back on the `default-device` argument
 try:
@@ -333,6 +338,7 @@ def handle_spotify_playlist(uri):
             perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
 
 def handle_qrcode(qrcode):
+    logger.info("Handling qrcode: " + str(qrcode))
     global last_qrcode
 
     # Ignore redundant codes, except for commands like "whatsong", where you might
@@ -377,6 +383,7 @@ def start_scan():
         data = p.readline()
         qrcode = str(data)[8:]
         if qrcode:
+            logger.info("Scanned qrcode: " + str(qrcode))
             qrcode = qrcode.rstrip()
             handle_qrcode(qrcode)
 
@@ -397,19 +404,6 @@ def read_debug_script():
             sleep(4)
 
 
-perform_global_request('pauseall')
-speak('Hello, I\'m qrocodile.')
-
-if not args.skip_load:
-    # Preload library on startup (it takes a few seconds to prepare the cache)
-    print('Indexing the library...')
-    speak('Please give me a moment to gather my thoughts.')
-    perform_room_request('musicsearch/library/loadifneeded')
-    print('Indexing complete!')
-    speak('I\'m ready now!')
-
-speak('Show me a card!')
-
 if args.debug_file:
     # Run through a list of codes from a local file
     read_debug_script()
@@ -427,6 +421,30 @@ elif args.spotify_username:
         sp = None
         logger.info('Not using a Spotify account')
 else:
+    # Set up Spotify access (comment this out if you don't want to generate cards for Spotify tracks)
+    scope = 'user-library-read'
+    token = util.prompt_for_user_token(default_spotify_user, scope)
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        logger.info("logged into Spotify")
+    else:
+        raise ValueError('Can\'t get Spotify token for ' + username)
+        logger.info('Can\'t get Spotify token for ' + username)
+        sp = None
+        logger.info('Not using a Spotify account')
+
+    perform_global_request('pauseall')
+    speak('Hello, I\'m qrocodile.')
+
+    if not args.skip_load:
+        # Preload library on startup (it takes a few seconds to prepare the cache)
+        print('Indexing the library...')
+        speak('Please give me a moment to gather my thoughts.')
+        perform_room_request('musicsearch/library/loadifneeded')
+        print('Indexing complete!')
+        speak('I\'m ready now!')
+
+    speak('Show me a card!')
     #load_defaults()
     # Start the QR code reader
     ## --nodisplay required as running pi headless
