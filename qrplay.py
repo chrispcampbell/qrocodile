@@ -1,4 +1,4 @@
-#! python3
+#!/usr/bin/env python3
 #
 # Copyright (c) 2018 Chris Campbell
 #
@@ -337,6 +337,47 @@ def handle_spotify_playlist(uri):
             action = "queue"
             perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
 
+def handle_spotify_artist(uri):
+    artist_raw = sp.artist(uri)
+    artist_name = artist_raw["name"]
+
+    # clear the sonos queue
+    action = 'clearqueue'
+    perform_room_request('{0}'.format(action))
+
+    # getting top tracks and in order to avoid "cannot play track", set the country
+    ## https://spotipy.readthedocs.io/en/latest/#spotipy.client.Spotify.artist_top_tracks
+    artist_top_tracks = sp.artist_top_tracks(uri,country='DE')
+    
+    # plan is to get a collection of songs from all albums based on:
+    ## https://spotipy.readthedocs.io/en/latest/#spotipy.client.Spotify.artist_albums
+
+    artist_tracks = {}
+
+    # turning on shuffle before starting the new queue
+    action = 'shuffle/on'
+    perform_room_request('{0}'.format(action))
+    # when not able to add a track to the queue, spotipy resets the track # to 1
+    # in this case I just handled the track nr separately with n
+    n = 0
+    for track in artist_top_tracks['tracks']:
+        n = n + 1
+        track_number = n
+        track_name = track["name"]
+        track_uri = track["uri"]
+        artist_tracks.update({track_number: {}})
+        artist_tracks[track_number].update({"uri" : track_uri})
+        artist_tracks[track_number].update({"name" : track_name})
+        print(str(track_number) + ": " + str(track_name))
+        if track_number == int("1"):
+            # play track 1 immediately
+            action = 'now'
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+        else:
+            # add all remaining tracks to queue
+            action = "queue"
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+
 def handle_qrcode(qrcode):
     logger.info("Handling qrcode: " + str(qrcode))
     global last_qrcode
@@ -356,7 +397,6 @@ def handle_qrcode(qrcode):
     elif qrcode.startswith('spotify:album:'):
         handle_spotify_album(qrcode)
     elif qrcode.startswith('spotify:artist:'):
-        # NOT READY
         handle_spotify_artist(qrcode)
     elif qrcode.startswith('spotify:user:'):
         if (":playlist:") in qrcode:
