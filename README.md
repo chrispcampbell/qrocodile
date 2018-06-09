@@ -4,19 +4,18 @@ A kid-friendly system for controlling Sonos with QR codes.
 
 ## Origin
 
-This is a fork of the qrocodile project originally developed by https://github.com/chrispcampbell
+This is a fork of the *qrocodile* project originally developed by https://github.com/chrispcampbell
 
 Changes to the original:
-* support for Spotify **Albums** & **Playlists** (using the Sonos Queue)
+* support for Spotify **Albums** & **Playlists** & **Artists** (using the Sonos Queue)
 * generation of cards for the Sonos Zones (Rooms) available on your network
-* creation of a file with defaults for Sonos Room, Spotify User and node-sonos host
-* for the generation of QR codes, using the **pyqrcode** Python module instead of the OS package
+* reliance on a my_defaults.txt file containing custom defaults for Sonos Room, Spotify User and node-sonos host
+* Using a python module instead of an OS package for the generation of QR codes
 * replaced urllib with **requests** python module
-* updated to python 3.5
+* updated to python 3.x
 * disabled use of webkit2png
-* reduced reliance on hard-coded settings
-* added variables for default announcement volume and language code
-* separated card creation files between: Commands, Music and Sonos Rooms
+* added variables for default announcement volume and language
+* separated card creation files between: Commands, Music (albums, artists, playlists) and Sonos Rooms
 * added shuffle on/off and repeat on/off commands
 
 For the whole story behind qrocodile, see the original project https://github.com/chrispcampbell/qrocodile
@@ -31,12 +30,13 @@ On the hardware side, it's just a camera-attached Raspberry Pi nested inside som
 
 On the software side, there are two separate Python scripts:
 
-* Run `qrgen.py` on your primary computer. It takes a list of songs (from your local music library and/or Spotify) and commands (e.g. play/pause, next) and spits out an HTML page containing little cards imprinted with an icon and text on one side, and a QR code on the other. Print them out, then cut, fold, and glue until you're left with a neat little stack of cards.
+* Run `qrgen.py` on any computer. It takes a list of songs (from your local music library and/or Spotify), commands (e.g. play/pause, next) or sonos zones and spits out an HTML page containing little cards imprinted with an icon and text on one side, and a QR code on the other. Print them out, then cut, fold, and glue until you're left with a neat little stack of cards.
 
-* Run `qrplay.py` on your Raspberry Pi. It launches a process that uses the attached camera to scan for QR codes, then translates those codes into commands (e.g. "speak this phrase", "play [song|album|playlist] in this room", "build a queue").
+* Run `qrplay.py` on your Raspberry Pi. It launches a process that uses the attached camera to scan for QR codes, then translates those codes into commands (e.g. "speak this phrase", "play [song|artist|album|playlist] in this room", "build a queue").
 
-Python requirements:
+Requirements:
 
+* Spotify developer account (in order to play content from spotify)
 * Python 3
 * Python modules:
   * spotipy
@@ -44,13 +44,43 @@ Python requirements:
   * pyqrcode
   * pypng
 
+
+## Spotify Account
+
+Both for generating cards and for playing content, you will need:
+* Spotify Premium account
+* [Spotify Developer account](https://developer.spotify.com/my-applications/#!/applications/create) (free) and create an application
+
 ## Installation and Setup
 
-### 1. Prepare your Raspberry Pi
+### 1. node-sonos-http-api
 
-Originally built this using a Raspberry Pi 3 Model B (running Raspbian, it also works using a Raspberry Pi Zero W) and an Arducam OV5647 camera module. Things may or may not work with other models (for example, how you control the onboard LEDs varies by model).
+This node service allows to interact with the available sonos speakers via an API.
 
-To set up the camera module, I had to add an entry in `/etc/modules`:
+To install, clone the [custom fork](https://github.com/chrispcampbell/node-sonos-http-api/tree/qrocodile), check out the `qrocodile` branch, install, and start:
+
+```
+% git clone -b qrocodile https://github.com/chrispcampbell/node-sonos-http-api.git
+% cd node-sonos-http-api
+% npm install --production
+% npm start
+```
+
+On Debian, the **nodejs-legacy** package was required as well as the standard **nodejs** package. 
+The node server will start listening on port :5005 of the computer it is running on.
+
+In order 
+For the announcements, it uses Google TTS, see [node-sonos-http-api](https://github.com/chrispcampbell/node-sonos-http-api/tree/qrocodile) for all the details.
+
+### 2. Prepare your Raspberry Pi to read qrcodes with qrplay.py
+
+The control of the LEDs will differ based on the Raspberry Pi in use. In my setup, I am using a RPi 3 Model B to run both node and qrplay (although a bit slower, qrplay.py also worked well on a Raspberry Pi Zero W) and an Arducam OV5647 camera module. 
+
+To set up the camera module, I had to:
+
+* connect the camera to the slot on the RPi
+* enable the camera via **raspi-config**
+* add an entry in `/etc/modules`:
 
 ```
 % sudo emacs /etc/modules
@@ -69,29 +99,6 @@ Next, install `zbar-tools` (used to scan for QR codes) and test it out:
 
 Optional: Make a little case to hold your RPi and camera along with a little slot to hold a card in place.
 
-### 2. Start `node-sonos-http-api`
-
-Currently `qrplay` relies on a [custom fork](https://github.com/chrispcampbell/node-sonos-http-api/tree/qrocodile) of `node-sonos-http-api` that has been modified by chriscampbell to do things like:
-
-* look up library tracks using only a hash string (to keep the QR codes simple)
-* return a list of all available library tracks and their associated hashes
-* speak the current/next track
-* play the album associated with a song
-* other things I'm forgetting at the moment
-
-(Note: `node-sonos-http-api` made it easy to bootstrap this project, as it already did much of what I needed.  However, it would probably make more sense to use something like [SoCo](https://github.com/SoCo/SoCo) (a Sonos controller API for Python) so that we don't need to run a separate server, and `qrplay` could control the Sonos system directly.)
-
-It's possible to run `node-sonos-http-api` directly on the Raspberry Pi, so that you don't need an extra machine running, but I found that it's kind of slow this way (especially when the QR scanner process is already taxing the CPU), so I usually have it running on a separate machine or Raspberry Pi to keep things snappy.
-
-To install, clone the fork, check out the `qrocodile` branch, install, and start:
-
-```
-% git clone -b qrocodile https://github.com/chrispcampbell/node-sonos-http-api.git
-% cd node-sonos-http-api
-% npm install --production
-% npm start
-```
-
 ### 3. Generate some cards with `qrgen`
 
 First, clone the `qrocodile` repo if you haven't already on your primary computer:
@@ -101,7 +108,37 @@ First, clone the `qrocodile` repo if you haven't already on your primary compute
 % cd qrocodile
 ```
 
+#### 3.1 create music cards
+
+Create a text file that lists the different music cards you want to create.  (See `example.txt` for some possibilities.)
+
 Spotify track/album/playlist URIs can be found in the Spotify app by clicking a song|album|playlist, then selecting "Share > Copy Spotify URI".  For `qrgen` to access your Spotify account, you'll need to set up your own Spotify app token.  (More on that in the `spotipy` [documentation](http://spotipy.readthedocs.io/en/latest/).)
+
+```
+% python3 qrgen.py --generate-images --input=<file containing URIs>
+% open out/index.html
+```
+
+Without a my_defaults.txt file, you will need to indicate `--hostname` and `--spotify-user` arguments.
+
+```
+% python3 qrgen.py --hostname <IP of node-sonos-http-api host> --input example.txt --generate-images --spotify-user <spotify username>
+% open out/index.html
+```
+
+The **out** folder will contain an **index.html** with the generated content. If ran on the RPi, it can be handy to access that content via HTTP, Install nginx (or any other webserver) and edit the default vhost config, like for nginx:
+
+```
+
+root /home/pi/git/qrocodile/out/;
+
+location / {
+        try_files $uri $uri/ =404;
+        index index.html zones.html commands.html;
+        }
+```
+
+#### 3.2 generate my_defaults.txt file
 
 You can use `qrgen` to generate a file containing your defaults, you will be asked for the Spotfy username, the IP address of the server running the node-sonos-http-api and the default Sonos room. The last used Sonos Room will override the Default.
 
@@ -109,20 +146,8 @@ You can use `qrgen` to generate a file containing your defaults, you will be ask
 % python3 qrgen.py --set-defaults
 ```
 
-You can use `qrgen` to list out URIs for all available tracks in your music library (these examples assume `node-sonos-http-api` is running on `localhost`):
 
-```
-% python3 qrgen.py --hostname <IP of node-sonos-http-api host> --list-library
-```
-
-Next, create a text file that lists the different music cards you want to create.  (See `example.txt` for some possibilities.)
-
-Finally, generate some cards and view the output in your browser. Omit `--hostname` and `--spotify-user` if you created a defaults file (see `--set-defaults` above).
-
-```
-% python3 qrgen.py --hostname <IP of node-sonos-http-api host> --input example.txt --generate-images --spotify-user <spotify username>
-% open out/index.html
-```
+#### 3.3 generate Sonos Zones/Rooms cards
 
 The cards for Commands and Sonos Zones are generated separately.
 
@@ -133,21 +158,14 @@ Create Sonos Zone cards using `qrgen`, it does not require a list file. Omit `--
 % open out/zones.html
 ```
 
+#### 3.4 generate Commands cards
 
-Create Command cards using qrgen and the text file command_cards.txt. Use the file command_cards.txt as a template, remove the commands you don't need and issue the command to generate the cards.
+Create Command cards using qrgen and the text file command_cards.txt. All available commands are in the command_cards_all.txt, place the ones you need in command_cards.txt and generate the cards.
 
 ```
 % python3 qrgen.py --commands
 % open out/commands.html
 ```
-
-
-It'll look something like this:
-
-<p align="center">
-<img src="docs/images/sheet.jpg" width="50%" height="50%">
-</p>
-
 
 
 ### 4. Start `qrplay`
@@ -165,16 +183,86 @@ Then, launch `qrplay`, specifying the hostname of the machine running `node-sono
 % python3 qrplay.py --hostname <IP of node-sonos-http-api host>
 ```
 
-If you want to use your own `qrocodile` as a standalone thing (not attached to a monitor, etc), you'll want to set up your RPi to launch `qrplay` when the device boots:
+### 5. start services on boot for a stand-alone RPi
+
+#### 5.1 qrplay using systemd
+
+If you want to use your own `qrocodile` as a standalone thing (not attached to a monitor, etc), you'll want to set up your RPi to launch `qrplay` when the device boots. Here's a **qrplay.service** systemd unit file:
 
 ```
-% emacs ~/.config/lxsession/LXDE-pi/autostart
-# Add an entry to launch `qrplay.py`, pipe the output to a log file, etc
+[Unit]
+Description=qrplay
+After=network.target node-sonos-http-api.service
+
+[Service]
+Type=simple
+Restart=always
+PIDFile=/run/qrplay.pid
+#ExecStart=/home/pi/scripts/qrplay.sh
+ExecStart=/usr/bin/python3 /home/pi/git/qrocodile/qrplay.py
+WorkingDirectory=/home/pi/git/qrocodile/
+User=pi
+Environment="SPOTIPY_CLIENT_ID=<your spotify client id>" "SPOTIPY_CLIENT_SECRET=<your spotify client secret>"
+
+[Install]
+WantedBy=multi-user.target
 ```
+
+then run
+```
+% systemctl reload-daemon
+% systemctl enable qrplay.service
+```
+
+#### 5.2 node-sonos-http-api
+
+It is possible to keep this node server running on boot and restart if it stops working using [forever](https://github.com/foreverjs/forever). Here's part of a /etc/init.d/node-sonos-http-api file that starts the node server using forever.
+
+```
+...
+APPLICATION_PATH="/home/pi/git/node-sonos-http-api/server.js"
+PIDFILE="/var/run/$NAME.pid"
+...
+    forever \
+      --pidFile $PIDFILE \
+      -a \
+      -l $LOGFILE \
+      --minUptime $MIN_UPTIME \
+      --spinSleepTime $SPIN_SLEEP_TIME \
+      start $APPLICATION_PATH 2>&1 > /dev/null &
+...
+```
+
+#### 5.3 generate zone cards on boot
+
+If you'd like to have fresh sonos zone cards on every boot, you can have a **zones.service** systemd unit file:
+
+```
+[Unit]
+Description=qrgen zones
+After=network.target qrplay.service node-sonos-http-api.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/pi/git/qrocodile/qrgen.py --zones
+RemainAfterExit=false
+WorkingDirectory=/home/pi/git/qrocodile/
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then run
+```
+% systemctl reload-daemon
+% systemctl enable zones.service
+```
+
 
 ## The Cards
 
-Currently `qrgen` and `qrplay` have built-in support for five different kinds of cards: song, album, playlist, commands and zone cards
+Currently `qrgen` and `qrplay` have built-in support for six different kinds of cards: song, artist, album, playlist, commands and zone cards
 
 Song cards can be generated for tracks in your music library or from Spotify, and can be used to play just that song, add that song to the queue, or play the entire album. For example:
 
