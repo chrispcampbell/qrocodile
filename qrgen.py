@@ -11,7 +11,6 @@ import subprocess
 import sys
 import requests  # replaces urllib & urllib2
 import pyqrcode  # https://pypi.python.org/pypi/PyQRCode replaces system qrencode
-import unidecode # added in order to handle replacing special characters with the next best replacement
 
 # Build a map of the known commands and pictures of their cards
 commands = json.load(open('command_cards.txt'))
@@ -136,11 +135,12 @@ def get_zones():
 
   # Begin the HTML template
   html = '''
-    <html>
-    <head>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" href="cards.css">
-    </head>
-    <body>
+  </head>
+  <body>
     <a href=index.html>index.html</a></br>
     <a href=zones.html>zones.html</a></br>
     <a href=commands.html>commands.html</a></br>
@@ -165,9 +165,9 @@ def get_zones():
     html += '  <div class="labels">\n'
     html += '    <p class="zone">{}</p>\n'.format(n)  # corrected .format
     html += '  </div>\n'
-    html += '</div>\n'
+    html += '  </div>\n'
 
-  html += '</body>\n'
+  html += '  </body>\n'
   html += '</html>\n'
 
   with open('out/zones.html', 'w') as f:
@@ -349,15 +349,15 @@ def card_content_html(index, artist, album, song):
     qrimg = '{0}qr.png'.format(index)
     artimg = '{0}art.jpg'.format(index)
     html = ''
-    html += '  <img src="{0}" class="art"/>\n'.format(artimg)
-    html += '  <img src="{0}" class="qrcode"/>\n'.format(qrimg)
-    html += '  <div class="labels">\n'
-    html += '    <p class="song">{0}</p>\n'.format(unidecode.unidecode(song))
+    html += '    <img src="{0}" class="art"/>\n'.format(artimg)
+    html += '    <img src="{0}" class="qrcode"/>\n'.format(qrimg)
+    html += '      <div class="labels">\n'
+    html += '        <p class="song">{0}</p>\n'.format(song)
     if artist:
-        html += '    <p class="artist"><span class="small">by</span> {0}</p>\n'.format(unidecode.unidecode(artist))
+        html += '        <p class="artist"><span class="small">by</span> {0}</p>\n'.format(artist)
     if album:
-        html += '    <p class="album"><span class="small">from</span> {0}</p>\n'.format(unidecode.unidecode(album))
-    html += '  </div>\n'
+        html += '        <p class="album"><span class="small">from</span> {0}</p>\n'.format(album)
+    html += '      </div>\n'
     return html
 
 
@@ -419,11 +419,12 @@ def generate_cards():
 
   # Begin the HTML template
   html = '''
-    <html>
-    <head>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" href="cards.css">
-    </head>
-    <body>
+  </head>
+  <body>
     <a href=index.html>index.html</a></br>
     <a href=zones.html>zones.html</a></br>
     <a href=commands.html>commands.html</a></br>
@@ -464,7 +465,7 @@ def generate_cards():
     else:
       html += '<div class="card">\n'
       html += card_content_html(index, artist, album, song)
-      html += '</div>\n'
+      html += '    </div>\n'
   
 
     if args.generate_images:
@@ -479,7 +480,7 @@ def generate_cards():
 
     index += 1
 
-    html += '</body>\n'
+    html += '  </body>\n'
     html += '</html>\n'
 
   if args.commands:
