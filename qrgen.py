@@ -241,6 +241,31 @@ def process_spotify_track(uri, index):
 
   return (song, album, artist) # removed encoding into utf-8 as it turns str into bytes
 
+def process_spotify_artist(uri, index):
+    if not sp:
+        raise ValueError('Must configure Spotify API access first using `--spotify-username`')
+
+    artist = sp.artist(uri)
+
+    print(artist['name'])
+    artist_name = artist['name']
+    arturl = artist['images'][0]['url']
+    
+    # Determine the output image file names
+    qrout = 'out/{0}qr.png'.format(index)
+    artout = 'out/{0}art.jpg'.format(index)
+    
+    # Create a QR code from the album URI
+    qr1 = pyqrcode.create(uri)
+    qr1.png(qrout, scale=6)
+    qr1.show()
+
+    # Fetch the artwork and save to the output directory
+    print(subprocess.check_output(['curl', arturl, '-o', artout]))
+    
+    blank = ""
+    return (artist_name, blank, blank) # removed encoding into utf-8 as it turns str into bytes
+
 def process_spotify_album(uri, index):
     if not sp:
         raise ValueError('Must configure Spotify API access first using `--spotify-username`')
@@ -346,19 +371,20 @@ def process_library_track(uri, index):
 
 # Return the HTML content for a single card.
 def card_content_html(index, artist, album, song):
-    qrimg = '{0}qr.png'.format(index)
-    artimg = '{0}art.jpg'.format(index)
-    html = ''
-    html += '    <img src="{0}" class="art"/>\n'.format(artimg)
-    html += '    <img src="{0}" class="qrcode"/>\n'.format(qrimg)
-    html += '      <div class="labels">\n'
+  qrimg = '{0}qr.png'.format(index)
+  artimg = '{0}art.jpg'.format(index)
+  html = ''
+  html += '    <img src="{0}" class="art"/>\n'.format(artimg)
+  html += '    <img src="{0}" class="qrcode"/>\n'.format(qrimg)
+  html += '      <div class="labels">\n'
+  if song:
     html += '        <p class="song">{0}</p>\n'.format(song)
-    if artist:
-        html += '        <p class="artist"><span class="small">by</span> {0}</p>\n'.format(artist)
-    if album:
-        html += '        <p class="album"><span class="small">from</span> {0}</p>\n'.format(album)
-    html += '      </div>\n'
-    return html
+  if artist:
+    html += '        <p class="artist"><span class="small">by</span> {0}</p>\n'.format(artist)
+  if album:
+    html += '        <p class="album"><span class="small">from</span> {0}</p>\n'.format(album)
+  html += '      </div>\n'
+  return html
 
 
 # Generate a PNG version of an individual card (with no dashed lines).
@@ -448,6 +474,8 @@ def generate_cards():
       (song, album, artist) = process_spotify_album(line, index)
     elif line.startswith('spotify:track:'):
       (song, album, artist) = process_spotify_track(line, index)
+    elif line.startswith('spotify:artist:'):
+      (song, album, artist) = process_spotify_artist(line, index)
     elif line.startswith('spotify:user:'):
       if (":playlist:") in line:
         (song, album, artist) = process_spotify_playlist(line, index)

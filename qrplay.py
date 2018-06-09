@@ -1,4 +1,4 @@
-#! python3
+#!/usr/bin/env python3
 #
 # Copyright (c) 2018 Chris Campbell
 #
@@ -51,11 +51,13 @@ def check_node_sonos_http_api():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     result = s.connect_ex((default_hostname,port))
     if result == 0:
-        print("port is open")
+        logger.info("port is open")
     else:
         default_hostname = '127.0.0.1'
         print("Port is not open")
+        logger.info("Port is not open")
         print("setting default_hostname to localhost")
+        logger.info("setting default_hostname to localhost")
         defaults = {} # dict
         defaults.update({"default_spotify_user": default_spotify_user })
         defaults.update({"default_hostname" : default_hostname})
@@ -110,12 +112,12 @@ announcementvolume = 10
 try:
     with open('.last-device', 'r') as device_file:
         current_device = device_file.read().replace('\n', '')
-        print('Defaulting to last used room: ' + current_device)
+        logger.info('Defaulting to last used room: ' + current_device)
 except:
     #current_device = defaults['default_room']
     #current_device = args.default_device
     current_device = default_room
-    print('Initial room: ' + current_device)
+    logger.info('Initial room: ' + current_device)
 
 # Keep track of the last-seen code
 last_qrcode = ''
@@ -131,7 +133,7 @@ current_mode = Mode.PLAY_SONG_IMMEDIATELY
 def perform_request(url,type):
     # as with qrgen, this function has been expanded
     # to support two kinds of output: text and json, the latter turned into usable dicts
-    print(url)
+    logger.info("url= " + str(url)
     response = requests.get(url)
     if type == "txt":
     	result = response.text
@@ -201,7 +203,7 @@ def blink_led():
 def handle_command(qrcode):
     global current_mode
 
-    print('HANDLING COMMAND: ' + qrcode)
+    logger.info('HANDLING COMMAND: ' + qrcode)
 
     if qrcode == 'cmd:turntable':
         perform_room_request('linein/' + args.linein_source)
@@ -251,7 +253,7 @@ def handle_library_item(uri):
 
 
 def handle_spotify_item(uri):
-    print('PLAYING FROM SPOTIFY: ' + uri)
+    logger.info('PLAYING FROM SPOTIFY: ' + uri)
 
     if current_mode == Mode.BUILD_QUEUE:
         action = 'queue'
@@ -265,7 +267,7 @@ def handle_spotify_item(uri):
     perform_room_request('spotify/{0}/{1}'.format(action, uri))
 
 def handle_spotify_album(uri):
-    print('PLAYING ALBUM FROM SPOTIFY: ' + uri + '\n')
+    logger.info('PLAYING ALBUM FROM SPOTIFY: ' + uri + '\n')
     
     album_raw = sp.album(uri)
     album_name = album_raw["name"]
@@ -290,7 +292,8 @@ def handle_spotify_album(uri):
         album_tracks.update({track_number: {}})
         album_tracks[track_number].update({"uri" : track_uri})
         album_tracks[track_number].update({"name" : track_name})
-        print(track_number)
+        print(str(track_number) + ": " + str(track_name))
+        logger.info(str(track_number) + ": " + str(track_name))
         if track_number == int("1"):
             # play track 1 immediately
             action = 'now'
@@ -301,6 +304,7 @@ def handle_spotify_album(uri):
             perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
 
 def handle_spotify_playlist(uri):
+    logger.info('PLAYING PLAYLIST FROM SPOTIFY: ' + uri + '\n')
     sp_user = uri.split(":")[2]
     playlist_raw = sp.user_playlist(sp_user,uri)
     playlist_name = playlist_raw["name"]
@@ -327,7 +331,51 @@ def handle_spotify_playlist(uri):
         playlist_tracks.update({track_number: {}})
         playlist_tracks[track_number].update({"uri" : track_uri})
         playlist_tracks[track_number].update({"name" : track_name})
-        print(track_number)
+        print(str(track_number) + ": " + str(track_name))
+        logger.info(str(track_number) + ": " + str(track_name))
+        if track_number == int("1"):
+            # play track 1 immediately
+            action = 'now'
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+        else:
+            # add all remaining tracks to queue
+            action = "queue"
+            perform_room_request('spotify/{0}/{1}'.format(action, str(track_uri)))
+
+def handle_spotify_artist(uri):
+    logger.info('PLAYING ARTIST FROM SPOTIFY: ' + uri + '\n')
+    artist_raw = sp.artist(uri)
+    artist_name = artist_raw["name"]
+
+    # clear the sonos queue
+    action = 'clearqueue'
+    perform_room_request('{0}'.format(action))
+
+    # getting top tracks and in order to avoid "cannot play track", set the country
+    ## https://spotipy.readthedocs.io/en/latest/#spotipy.client.Spotify.artist_top_tracks
+    artist_top_tracks = sp.artist_top_tracks(uri,country='DE')
+    
+    # plan is to get a collection of songs from all albums based on:
+    ## https://spotipy.readthedocs.io/en/latest/#spotipy.client.Spotify.artist_albums
+
+    artist_tracks = {}
+
+    # turning on shuffle before starting the new queue
+    action = 'shuffle/on'
+    perform_room_request('{0}'.format(action))
+    # when not able to add a track to the queue, spotipy resets the track # to 1
+    # in this case I just handled the track nr separately with n
+    n = 0
+    for track in artist_top_tracks['tracks']:
+        n = n + 1
+        track_number = n
+        track_name = track["name"]
+        track_uri = track["uri"]
+        artist_tracks.update({track_number: {}})
+        artist_tracks[track_number].update({"uri" : track_uri})
+        artist_tracks[track_number].update({"name" : track_name})
+        print(str(track_number) + ": " + str(track_name))
+        logger.info(str(track_number) + ": " + str(track_name))
         if track_number == int("1"):
             # play track 1 immediately
             action = 'now'
@@ -356,7 +404,6 @@ def handle_qrcode(qrcode):
     elif qrcode.startswith('spotify:album:'):
         handle_spotify_album(qrcode)
     elif qrcode.startswith('spotify:artist:'):
-        # NOT READY
         handle_spotify_artist(qrcode)
     elif qrcode.startswith('spotify:user:'):
         if (":playlist:") in qrcode:
