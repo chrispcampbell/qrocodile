@@ -1,4 +1,7 @@
-out
+#out
 .cache*
 .last-device
 .DS_Store
+*.log
+my_defaults.txt
+out/

@@ -1,0 +1,28 @@
+{ "cmd:shuffle/on" : 
+    {"command": "cmd:shuffle/on", "label": "Shuffle", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
+    },
+    "cmd:shuffle/off" : 
+    {"command": "cmd:shuffle/off", "label": "Shuffle", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_shuffle_black_48dp.png"
+    },
+    "cmd:repeat/on":
+    {"command": "cmd:repeat/on", "label": "Repeat", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp.png"
+    },
+    "cmd:repeat/off":
+    {"command": "cmd:repeat/off", "label": "Repeat", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_repeat_black_48dp.png"
+    },
+    "cmd:playpause":
+    {"command": "cmd:playpause", "label": "Play / Pause", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_pause_circle_outline_black_48dp.png"
+    },
+    "cmd:next":
+    {"command": "cmd:next", "label": "Skip to Next Song", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_skip_next_black_48dp.png"
+    },
+    "cmd:saysong":
+    {"command": "cmd:saysong", "label": "What's Playing?", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
+    },
+    "cmd:saynext":
+    {"command": "cmd:saynext", "label": "What's Next?", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/action/drawable-xxxhdpi/ic_help_outline_black_48dp.png"
+    },
+    "mode:buildqueue":
+    {"command": "mode:buildqueue", "label": "Build List of Songs", "image": "https://raw.githubusercontent.com/google/material-design-icons/master/av/drawable-xxxhdpi/ic_playlist_add_black_48dp.png"
+    }    
+}

@@ -1,13 +1,5 @@
-lib:86d7b406b0f93a5e0993ce77b539cad2 # La Bonne Soupe > Literary Gentlemen > Oaf King, Again
-spotify:track:4uip0lLkMKl1nwchsdXs1r # Sweet > Fox On The Run
-lib:8b956f667499399de1b5b82dca9ac5e0 # Misfits > Walk Among Us > 20 Eyes
-cmd:playpause
-cmd:next
-cmd:turntable
-cmd:livingroom
-cmd:diningandkitchen
-cmd:songonly
-cmd:wholealbum
-cmd:buildqueue
-cmd:whatsong
-cmd:whatnext
+spotify:track:0t1Tb1HW8261jLa3OZp15V
+spotify:track:5CMjjywI0eZMixPeqNd75R
+spotify:album:4m2880jivSbbyEGAKfITCa
+spotify:album:04uhhcjGVCHodMgZjXOlye
+spotify:user:freemanfamilybanff:playlist:30CmRQYuirciDRK7cerLsm  # thomas the tank engine
